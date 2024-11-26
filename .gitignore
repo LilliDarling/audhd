@@ -1,6 +1,9 @@
 # Enviornment Variables
 api.env
+.env
 
 # Lock Files
 poetry.lock
 package-lock.json
+
+__pycache__

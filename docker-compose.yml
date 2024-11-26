@@ -1,0 +1,37 @@
+services:
+  api:
+    env_file: 
+      - ./.env/api.env
+    build: ./api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./api:/app
+
+  mongodb:
+    image: mongo
+    env_file: 
+      - ./.env/mongo.env
+    restart: always
+    volumes:
+      - audhd:/data/db
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    env_file: 
+      - ./.env/mexpress.env
+    ports:
+      - 8081:8081
+    environment:
+      WAIT_HOSTS: mongodb:27017
+    depends_on:
+      - mongodb
+
+volumes:
+  audhd:
+  
