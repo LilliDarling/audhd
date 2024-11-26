@@ -1,0 +1,5 @@
+# Enviornment Variables
+api.env
+
+# Lock Files
+poetry.lock
