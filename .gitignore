@@ -3,3 +3,4 @@ api.env
 
 # Lock Files
 poetry.lock
+package-lock.json
