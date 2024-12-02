@@ -7,3 +7,6 @@ poetry.lock
 package-lock.json
 
 __pycache__
+
+.expo
+node_modules
