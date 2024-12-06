@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from routes import auth
 
 
-app = FastAPI()
+api = FastAPI()
 
 
-app.include_router(auth.router, tags=["Authentication"])
+api.include_router(auth.router, tags=["Authentication"])

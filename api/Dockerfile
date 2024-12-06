@@ -12,7 +12,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 RUN poetry config virtualenvs.create false
 
-WORKDIR /app
+WORKDIR /api
 
 COPY pyproject.toml poetry.lock* ./
 
@@ -24,4 +24,4 @@ RUN poetry install --no-interaction
 
 EXPOSE 8000
 
-CMD ["poetry", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "main:api", "--reload", "--host", "0.0.0.0", "--port", "8000"]

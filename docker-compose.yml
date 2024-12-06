@@ -8,7 +8,7 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - ./api:/app
+      - ./api:/api
 
   mongodb:
     image: mongo
@@ -31,6 +31,19 @@ services:
       WAIT_HOSTS: mongodb:27017
     depends_on:
       - mongodb
+  
+  test:
+    build: ./api
+    env_file:
+      - ./.env/api.env
+    depends_on:
+      - mongodb
+    volumes:
+      - ./api:/api
+    command: poetry run pytest tests/ -v --asyncio-mode=auto --cov=.
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - PYTHONPATH=/api
 
 volumes:
   audhd:

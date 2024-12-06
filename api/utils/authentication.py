@@ -1,7 +1,7 @@
 import os
 import bcrypt
 from calendar import timegm
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from fastapi import Cookie
 from jose import JWTError, jwt
 from jose.constants import ALGORITHMS
@@ -53,7 +53,7 @@ def hash_password(plain_password: str) -> str:
 
 
 def generate_jwt(user: User) -> str:
-    exp = int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+    exp = int((datetime.now(tz=UTC) + timedelta(hours=1)).timestamp())
     jwt_data = JWTPayload(
         exp=exp,
         sub=user.username,
