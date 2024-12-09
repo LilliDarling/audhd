@@ -20,7 +20,6 @@ from utils.exceptions import AuthExceptions, UserExceptions, handle_route
 router = APIRouter(tags=["Authentication"], prefix="/api/auth")
 
 @router.post("/signup")
-@handle_route("creating user")
 async def create_user(
     user: UserRequest,
     request: Request,
@@ -47,7 +46,6 @@ async def create_user(
     return UserResponse.from_mongo(user_new)
 
 @router.post("/signin")
-@handle_route("signing in")
 async def signin(
     user_req: SignInRequest,
     request: Request,
@@ -77,7 +75,6 @@ async def signin(
         raise AuthExceptions.invalid_credentials()
 
 @router.get("/authenticate")
-@handle_route("authenticating")
 async def authenticate(
     user: UserResponse = Depends(try_get_jwt_user_data),
 ) -> UserResponse:
@@ -86,7 +83,6 @@ async def authenticate(
     return user
 
 @router.put("/change-password")
-@handle_route("changing password")
 async def change_password(
     password_change: PasswordChangeRequest,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
@@ -109,7 +105,6 @@ async def change_password(
     return {"message": "Password updated successfully"}
 
 @router.delete("/signout")
-@handle_route("signing out")
 async def signout(
     request: Request,
     response: Response,
