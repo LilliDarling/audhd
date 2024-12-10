@@ -1,5 +1,4 @@
 from fastapi import HTTPException, status
-from pymongo.errors import DuplicateKeyError
 from typing import Optional
 
 class AuthExceptions:
@@ -58,27 +57,6 @@ def handle_database_operation(operation_name: str):
                 raise UserExceptions.invalid_format("input", str(e))
             except HTTPException:
                 raise
-            except Exception as e:
-                raise UserExceptions.database_error(operation_name)
-        return wrapper
-    return decorator
-
-def handle_route(operation_name: str):
-    """
-    Decorator for handling common route operation errors
-    """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            try:
-                return await func(*args, **kwargs)
-            except HTTPException:
-                raise
-            except DuplicateKeyError as e:
-                error_message = str(e)
-                for field in ["username", "email"]:
-                    if field in error_message:
-                        raise UserExceptions.duplicate_field(field)
-                raise UserExceptions.database_error("creating user")
             except Exception as e:
                 raise UserExceptions.database_error(operation_name)
         return wrapper
