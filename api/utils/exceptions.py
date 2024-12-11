@@ -45,6 +45,14 @@ class UserExceptions:
             detail=f"User with this {field} already exists"
         )
 
+class TaskExceptions:
+    @staticmethod
+    def not_found() -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
 def handle_database_operation(operation_name: str):
     """
     Decorator for handling common database operation errors

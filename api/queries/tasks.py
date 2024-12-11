@@ -1,6 +1,7 @@
 from models.tasks import Task, TaskRequest
 from utils.exceptions import handle_database_operation
 from utils.database import engine
+from bson import ObjectId
 
 class TaskQueries:
     @handle_database_operation("creating task")
@@ -19,3 +20,50 @@ class TaskQueries:
     async def get_tasks(self, user_id: str) -> list[Task]:
         tasks = await engine.find(Task, Task.user_id == user_id)
         return tasks
+    
+    @handle_database_operation("retrieving task")
+    async def get_task(self, task_id: str, user_id: str) -> Task:
+        try:
+            task = await engine.find_one(Task, 
+                Task.id == ObjectId(task_id), 
+                Task.user_id == user_id
+            )
+            if not task:
+                raise ValueError("Task not found")
+            return task
+        except Exception:
+            raise ValueError("Task not found")
+    
+    @handle_database_operation("updating task")
+    async def update_task(self, task_id: str, task: TaskRequest, user_id: str) -> Task:
+        try:
+            existing_task = await engine.find_one(Task, 
+                Task.id == ObjectId(task_id), 
+                Task.user_id == user_id
+            )
+            if not existing_task:
+                raise ValueError("Task not found")
+
+            existing_task.title = task.title
+            existing_task.description = task.description
+            existing_task.priority = task.priority
+            existing_task.status = task.status
+
+            await engine.save(existing_task)
+            return existing_task
+        except Exception:
+            raise ValueError("Task not found")
+    
+    @handle_database_operation("deleting task")
+    async def delete_task(self, task_id: str, user_id: str) -> None:
+        try:
+            existing_task = await engine.find_one(Task, 
+                Task.id == ObjectId(task_id), 
+                Task.user_id == user_id
+            )
+            if not existing_task:
+                raise ValueError("Task not found")
+
+            await engine.delete(existing_task)
+        except Exception:
+            raise ValueError("Task not found")
