@@ -14,3 +14,8 @@ class TaskQueries:
         )
         await engine.save(new_task)
         return new_task
+
+    @handle_database_operation("retrieving tasks")
+    async def get_tasks(self, user_id: str) -> list[Task]:
+        tasks = await engine.find(Task, Task.user_id == user_id)
+        return tasks
