@@ -1,9 +1,10 @@
 from fastapi import Depends, HTTPException, APIRouter
+from bson import ObjectId
 from models.tasks import TaskRequest, TaskResponse
 from models.users import UserResponse
 from queries.tasks import TaskQueries
 from utils.authentication import try_get_jwt_user_data
-from utils.exceptions import AuthExceptions, UserExceptions
+from utils.exceptions import AuthExceptions, UserExceptions, TaskExceptions
 
 
 router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
@@ -51,8 +52,17 @@ async def get_task(
         raise AuthExceptions.unauthorized()
 
     try:
+        try:
+            ObjectId(task_id)
+        except Exception:
+            raise UserExceptions.invalid_format("task_id", "Invalid task ID format")
+
         task = await queries.get_task(task_id, current_user.id)
         return TaskResponse.from_mongo(task)
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            raise TaskExceptions.not_found()
+        raise UserExceptions.invalid_format("task", str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -67,10 +77,14 @@ async def update_task(
 ) -> TaskResponse:
     if not current_user:
         raise AuthExceptions.unauthorized()
-    
+
     try:
         updated_task = await queries.update_task(task_id, task, current_user.id)
         return TaskResponse.from_mongo(updated_task)
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            raise TaskExceptions.not_found()
+        raise UserExceptions.invalid_format("task", str(e))
     except HTTPException:
         raise
     except Exception as e:

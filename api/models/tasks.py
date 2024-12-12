@@ -1,5 +1,5 @@
-from odmantic import Model, Field
-from pydantic import BaseModel
+from odmantic import Model
+from pydantic import BaseModel, field_validator, Field
 
 
 class TaskRequest(BaseModel):
@@ -7,6 +7,14 @@ class TaskRequest(BaseModel):
     description: str = Field(min_length=5, max_length=100)
     priority: int = Field(ge=1, le=3)
     status: str = Field(default="pending")
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        valid_statuses = ["pending", "in_progress", "completed"]
+        if v.lower() not in valid_statuses:
+            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+        return v.lower()
 
 class Task(Model):
     title: str

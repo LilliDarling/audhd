@@ -6,8 +6,10 @@ from datetime import UTC, datetime, timedelta
 
 from models.users import User
 from models.jwt import JWTPayload, JWTUserData
+from models.tasks import Task
 from utils.authentication import ALGORITHM, SIGNING_KEY, hash_password
 from queries.auth import UserQueries
+from queries.tasks import TaskQueries
 
 VALID_USER_DATA = {
     "username": "testuser",
@@ -15,6 +17,24 @@ VALID_USER_DATA = {
     "email": "test@example.com",
     "password": "StrongPass123!"
 }
+
+VALID_TASK_DATA = {
+    "title": "Test Task",
+    "description": "Test Description",
+    "priority": 1,
+    "status": "pending"
+}
+
+def get_mock_task(user_id: str, overrides=None):
+    """Helper function to create a mock task"""
+    data = VALID_TASK_DATA.copy()
+    if overrides:
+        data.update(overrides)
+    return Task(
+        id=ObjectId(),
+        user_id=user_id,
+        **data
+    )
 
 def get_mock_user(overrides=None):
     """Helper function to create a mock user"""
@@ -63,8 +83,13 @@ async def mock_response():
     return MockResponse()
 
 @pytest.fixture
+def task_queries():
+    """Create a TaskQueries instance for testing"""
+    return TaskQueries()
+
+@pytest.fixture
 def queries():
-    """Create a real UserQueries instance that we'll patch"""
+    """Create a UserQueries instance for testing"""
     return UserQueries()
 
 def create_token(mock_user: User, expired: bool = False) -> str:
