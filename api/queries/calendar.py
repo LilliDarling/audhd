@@ -45,34 +45,37 @@ class CalendarQueries:
         if not credentials_doc:
             raise CalendarExceptions.not_connected()
 
-        credentials = self.token_manager.create_credentials(
-            credentials_doc.encrypted_access_token,
-            credentials_doc.encrypted_refresh_token
-        )
-
-        service = create_calendar_service(credentials)
-        
-        event = {
-            'summary': task.title,
-            'description': task.description,
-            'start': {
-                'dateTime': event_request.start_time.isoformat(),
-                'timeZone': 'UTC',
-            },
-            'end': {
-                'dateTime': event_request.end_time.isoformat(),
-                'timeZone': 'UTC',
-            },
-            'reminders': {
-                'useDefault': False,
-                'overrides': [
-                    {'method': 'popup', 'minutes': event_request.notification_minutes}
-                ]
-            }
-        }
-        
         try:
+            credentials = self.token_manager.create_credentials(
+                credentials_doc.encrypted_access_token,
+                credentials_doc.encrypted_refresh_token
+            )
+            service = create_calendar_service(credentials)
+            
+            event = {
+                'summary': task.title,
+                'description': task.description,
+                'start': {
+                    'dateTime': event_request.start_time.isoformat(),
+                    'timeZone': 'UTC',
+                },
+                'end': {
+                    'dateTime': event_request.end_time.isoformat(),
+                    'timeZone': 'UTC',
+                },
+                'reminders': {
+                    'useDefault': False,
+                    'overrides': [
+                        {'method': 'popup', 'minutes': event_request.notification_minutes}
+                    ]
+                }
+            }
+            
             created_event = service.events().insert(calendarId='primary', body=event).execute()
-            return CalendarEventResponse.from_google_event(created_event, str(task.id))
+            return CalendarEventResponse(
+                event_id=created_event['id'],
+                task_id=str(task.id),
+                calendar_link=created_event.get('htmlLink', '')
+            )
         except Exception as e:
             raise CalendarExceptions.operation_failed("adding event to calendar")

@@ -30,6 +30,7 @@ google-auth-oauthlib = "^1.2.0"
 google-auth = "^2.28.2"
 google-api-python-client = "^2.123.0"
 cryptography = "^42.0.5"
+python-dotenv = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]
