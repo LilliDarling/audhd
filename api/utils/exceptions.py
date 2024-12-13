@@ -53,6 +53,21 @@ class TaskExceptions:
             detail="Task not found"
         )
 
+class CalendarExceptions:
+    @staticmethod
+    def not_connected() -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Calendar not connected. Please connect your Google Calendar first."
+        )
+    
+    @staticmethod
+    def operation_failed(operation: str) -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed while {operation}"
+        )
+
 def handle_database_operation(operation_name: str):
     """
     Decorator for handling common database operation errors
