@@ -11,3 +11,6 @@ __pycache__
 .coverage
 .expo
 node_modules
+
+
+firebase-admin-sdk.json

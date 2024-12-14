@@ -13,6 +13,9 @@ class CalendarCredentials(Model):
         "collection": "calendar_credentials"
     }
 
+class FirebaseTokenRequest(BaseModel):
+    firebase_token: str
+
 class CalendarEventRequest(BaseModel):
     task_id: str
     start_time: datetime

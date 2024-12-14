@@ -10,14 +10,6 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA6Qj52fPc4lr94tztbfjlxw2S_QPUrXDE",
-  authDomain: "audhd-dev.firebaseapp.com",
-  projectId: "audhd-dev",
-  storageBucket: "audhd-dev.appspot.com",
-  messagingSenderId: "270410028225",
-  appId: "1:270410028225:ios:517482661bb0c87843f040"
-};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

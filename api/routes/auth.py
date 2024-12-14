@@ -12,7 +12,7 @@ from utils.authentication import (
     generate_jwt,
     verify_password,
 )
-from utils.database import engine
+from config.database import engine
 from models.users import UserRequest, UserResponse, SignInRequest, PasswordChangeRequest
 from queries.auth import UserQueries
 from utils.exceptions import AuthExceptions, UserExceptions

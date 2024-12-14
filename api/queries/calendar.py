@@ -3,9 +3,9 @@ from typing import Optional
 
 from models.calendar import CalendarCredentials, CalendarEventRequest, CalendarEventResponse
 from models.tasks import Task
-from utils.calendar_mgr import CalendarTokenManager, create_calendar_service
+from config.calendar_mgr import CalendarTokenManager, create_calendar_service
 from utils.exceptions import CalendarExceptions
-from utils.database import engine
+from config.database import engine
 from utils.exceptions import handle_database_operation
 
 class CalendarQueries:
@@ -79,3 +79,4 @@ class CalendarQueries:
             )
         except Exception as e:
             raise CalendarExceptions.operation_failed("adding event to calendar")
+        

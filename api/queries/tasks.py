@@ -1,6 +1,6 @@
 from models.tasks import Task, TaskRequest
 from utils.exceptions import handle_database_operation
-from utils.database import engine
+from config.database import engine
 from bson import ObjectId
 
 class TaskQueries:

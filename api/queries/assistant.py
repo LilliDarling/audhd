@@ -9,7 +9,7 @@ from queries.calendar import CalendarQueries
 from queries.tasks import TaskQueries
 from utils.exceptions import handle_database_operation
 from models.tasks import Task
-from utils.database import engine
+from config.database import engine
 
 
 class ADHDAssistantQueries:

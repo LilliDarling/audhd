@@ -1,36 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 
-from models.calendar import CalendarEventRequest, CalendarEventResponse
+from models.calendar import CalendarEventRequest, CalendarEventResponse, FirebaseTokenRequest
 from models.users import UserResponse
 from queries.calendar import CalendarQueries
 from queries.tasks import TaskQueries
 from utils.authentication import try_get_jwt_user_data
-from utils.calendar_mgr import CalendarTokenManager
+from config.calendar_mgr import CalendarTokenManager
 from utils.exceptions import AuthExceptions, TaskExceptions, CalendarExceptions
 
 
 router = APIRouter(tags=["Calendar"], prefix="/api/calendar")
 
-@router.get("/connect")
-async def get_auth_url(
-    current_user: UserResponse = Depends(try_get_jwt_user_data)
-) -> dict:
-    if not current_user:
-        raise AuthExceptions.unauthorized()
-    
-    token_manager = CalendarTokenManager()
-    flow = token_manager.create_oauth_flow("your-app://oauth2redirect") # Need the redirect URL
-    auth_url, _ = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
-    
-    return {"auth_url": auth_url}
-
-@router.post("/callback")
-async def calendar_callback(
-    code: str,
+@router.post("/connect")
+async def connect_calendar(
+    token_request: FirebaseTokenRequest,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     queries: CalendarQueries = Depends()
 ) -> dict:
@@ -38,11 +22,16 @@ async def calendar_callback(
         raise AuthExceptions.unauthorized()
     
     token_manager = CalendarTokenManager()
-    flow = token_manager.create_oauth_flow("your-app://oauth2redirect")  # Need the redirect URL
     
     try:
-        flow.fetch_token(code=code)
-        credentials = flow.credentials
+        firebase_user = await token_manager.verify_firebase_token(token_request.firebase_token)
+        
+        credentials = token_manager.create_credentials_from_firebase(firebase_user)
+        if not credentials:
+            raise HTTPException(
+                status_code=400,
+                detail="No Google account linked to Firebase user"
+            )
         
         await queries.save_credentials(
             user_id=current_user.id,
@@ -52,8 +41,10 @@ async def calendar_callback(
         )
         
         return {"message": "Calendar connected successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
-        raise CalendarExceptions.invalid_credentials()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/events")
 async def add_task_to_calendar(

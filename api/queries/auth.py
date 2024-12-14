@@ -1,6 +1,6 @@
 from utils.authentication import hash_password
 from models.users import UserRequest, User
-from utils.database import engine
+from config.database import engine
 from typing import Optional
 from utils.exceptions import UserExceptions, handle_database_operation
 
