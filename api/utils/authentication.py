@@ -1,7 +1,6 @@
 import os
 import bcrypt
-from calendar import timegm
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from fastapi import Cookie
 from jose import JWTError, jwt
 from jose.constants import ALGORITHMS
