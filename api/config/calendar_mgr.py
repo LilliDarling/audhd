@@ -1,12 +1,10 @@
 import os
-import firebase_admin
 from pathlib import Path
 from cryptography.fernet import Fernet
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from supabase import create_client, Client
 from dotenv import load_dotenv
-from firebase_admin import auth, credentials
-from typing import Optional
 
 
 env_path = Path('.') / '.env' / 'api.env'
@@ -14,6 +12,7 @@ load_dotenv(env_path)
 
 class CalendarTokenManager:
     def __init__(self):
+        # Initialize encryption
         encryption_key = os.environ.get("ENCRYPTION_KEY")
         if not encryption_key:
             raise ValueError("ENCRYPTION_KEY not found in environment variables")
@@ -22,15 +21,23 @@ class CalendarTokenManager:
             self.fernet = Fernet(encryption_key.strip().encode())
         except Exception as e:
             raise ValueError(f"Invalid encryption key format: {str(e)}")
+        
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_SERVICE_KEY")
+        if not supabase_url or not supabase_key:
+            raise ValueError("Supabase credentials not found in environment variables")
+        
+        self.supabase: Client = create_client(supabase_url, supabase_key)
+        
+        self.client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        self.client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-        if not firebase_admin._apps:
-            cred = credentials.Certificate({
-                "type": "service_account",
-                "project_id": os.environ.get("FIREBASE_PROJECT_ID"),
-                "private_key": os.environ.get("FIREBASE_PRIVATE_KEY").replace("\\n", "\n"),
-                "client_email": os.environ.get("FIREBASE_CLIENT_EMAIL"),
-            })
-            firebase_admin.initialize_app(cred)
+    async def verify_session(self, access_token: str) -> dict:
+        try:
+            user = self.supabase.auth.get_user(access_token)
+            return user.dict()
+        except Exception as e:
+            raise ValueError(f"Invalid session: {str(e)}")
 
     def encrypt_token(self, token: str) -> str:
         if not token:
@@ -42,29 +49,13 @@ class CalendarTokenManager:
             raise ValueError("Encrypted token cannot be empty")
         return self.fernet.decrypt(encrypted_token.encode()).decode()
 
-    async def verify_firebase_token(self, firebase_token: str) -> dict:
-        try:
-            decoded_token = auth.verify_id_token(firebase_token)
-            return decoded_token
-        except Exception as e:
-            raise ValueError(f"Invalid Firebase token: {str(e)}")
-
-    def create_credentials_from_firebase(self, firebase_user_data: dict) -> Optional[Credentials]:
-        if 'firebase' not in firebase_user_data:
-            return None
-
-        provider_data = firebase_user_data.get('providerData', [])
-        google_data = next((p for p in provider_data if p.get('providerId') == 'google.com'), None)
-        
-        if not google_data:
-            return None
-
+    def create_credentials(self, encrypted_access_token: str, encrypted_refresh_token: str) -> Credentials:
         return Credentials(
-            token=google_data.get('accessToken'),
-            refresh_token=google_data.get('refreshToken'),
+            token=self.decrypt_token(encrypted_access_token),
+            refresh_token=self.decrypt_token(encrypted_refresh_token),
             token_uri="https://oauth2.googleapis.com/token",
-            client_id=os.environ.get("GOOGLE_CLIENT_ID"),
-            client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+            client_id=self.client_id,
+            client_secret=self.client_secret,
             scopes=['https://www.googleapis.com/auth/calendar']
         )
 
