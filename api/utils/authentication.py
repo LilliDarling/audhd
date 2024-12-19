@@ -7,6 +7,8 @@ from jose.constants import ALGORITHMS
 from typing import Annotated, Optional
 from models.jwt import JWTPayload, JWTUserData
 from models.users import User
+from config.calendar_mgr import GoogleService
+from utils.exceptions import AuthExceptions
 
 ALGORITHM = ALGORITHMS.HS256
 

@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from odmantic import AIOEngine
 from models.users import User
 from models.tasks import Task
-from models.calendar import CalendarCredentials
+from models.calendar import GoogleCredentials
 from models.assistant import AssistantMessage
 
 
@@ -18,4 +18,4 @@ engine = AIOEngine(client=client, database="audhd")
 
 
 async def initialize_database():
-    await engine.configure_database([User, Task, CalendarCredentials, AssistantMessage])
+    await engine.configure_database([User, Task, GoogleCredentials, AssistantMessage])
