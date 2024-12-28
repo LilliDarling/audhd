@@ -6,7 +6,7 @@ from odmantic import Model, Field
 class AssistantMessage(Model):
     user_id: str
     content: str
-    # timestamp: datetime = Field(default_factory=datetime.now(tz=UTC))
+    timestamp: datetime
     type: str = Field(default="user")  # "user" or "assistant"
     category: Optional[str] = Field(default=None)  # "task_breakdown", "motivation", "time_management", etc.
 

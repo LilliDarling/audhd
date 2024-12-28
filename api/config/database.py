@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
 from motor.motor_asyncio import AsyncIOMotorClient
 from odmantic import AIOEngine
+
 from models.users import User
 from models.tasks import Task
 from models.calendar import GoogleCredentials

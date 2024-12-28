@@ -10,7 +10,7 @@ from utils.authentication import try_get_jwt_user_data
 from utils.exceptions import AuthExceptions
 
 
-router = APIRouter(tags=["ADHD Assistant"], prefix="/api/assistant")
+router = APIRouter(tags=["ADHDAssistant"], prefix="/api/assistant")
 
 @router.post("/message")
 async def send_message(
