@@ -20,8 +20,6 @@ RUN poetry install --no-interaction --no-root
 
 COPY . .
 
-RUN poetry install --no-interaction
-
 EXPOSE 8000
 
 CMD ["poetry", "run", "uvicorn", "main:api", "--reload", "--host", "0.0.0.0", "--port", "8000"]
