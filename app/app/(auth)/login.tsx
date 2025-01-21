@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
-import LoginForm from '@/components/auth/LoginForm';
+import LoginForm from '@/lib/components/auth/LoginForm';
 
 export default function LoginScreen() {
   return (
