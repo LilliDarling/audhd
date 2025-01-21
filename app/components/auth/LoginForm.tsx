@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, Pressable, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { authApi } from '@/lib/api/auth';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -13,9 +14,10 @@ export default function LoginForm() {
       setLoading(true);
       setError('');
       
+      await authApi.signIn({ username, password });
       router.replace("./../(tabs)");
-    } catch (err) {
-      setError('Invalid username or password');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Invalid username or password');
     } finally {
       setLoading(false);
     }
