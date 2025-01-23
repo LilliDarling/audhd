@@ -54,7 +54,10 @@ export const authApi = {
       const response = await api.get<UserResponse>('/api/auth/authenticate');
       return response.data;
     } catch (error: any) {
-      throw new AuthenticationError('Authentication check failed');
+      if (error.response?.status === 401) {
+        throw new AuthenticationError('Session expired');
+      }
+      throw error;
     }
   }
 };

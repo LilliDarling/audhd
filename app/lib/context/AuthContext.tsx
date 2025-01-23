@@ -69,7 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await authApi.checkAuth();
       dispatch({ type: 'SET_USER', payload: user });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: '' });
+      dispatch({ type: 'SIGN_OUT' });
+      router.replace('/(auth)/login');
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   }
 

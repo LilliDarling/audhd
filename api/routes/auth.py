@@ -69,6 +69,7 @@ async def signin(
             raise AuthExceptions.invalid_credentials()
         
         token = generate_jwt(user)
+
         secure = False if request.headers.get("origin", "").startswith("http://localhost") else True
         response.set_cookie(
             key="fast_api_token",
