@@ -9,13 +9,3 @@ export const api = axios.create({
   },
   withCredentials: true
 });
-
-api.interceptors.request.use((config) => {
-  console.log('Request cookies:', document.cookie);
-  return config;
-});
-
-api.interceptors.response.use((response) => {
-  console.log('Response cookies:', document.cookie);
-  return response;
-});
