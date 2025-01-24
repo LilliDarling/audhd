@@ -1,0 +1,65 @@
+services:
+  expo:
+    image: node:latest
+    command: /bin/bash run.sh
+    working_dir: /app
+    user: "1000:1000"
+    volumes:
+      - ./app:/app
+    environment:
+      BASE_URL: http://localhost:8082
+      WEB_PORT: 8082
+      PORT: 8082
+    ports:
+      - "8082:8081"
+    depends_on:
+      - api
+  api:
+    env_file: 
+      - ./.env/api.env
+    build: ./api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./api:/api
+
+  mongodb:
+    image: mongo
+    env_file: 
+      - ./.env/mongo.env
+    restart: always
+    volumes:
+      - audhd:/data/db
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    env_file: 
+      - ./.env/mexpress.env
+    ports:
+      - 8083:8081
+    environment:
+      WAIT_HOSTS: mongodb:27017
+    depends_on:
+      - mongodb
+  
+  test:
+    build: ./api
+    env_file:
+      - ./.env/api.env
+    depends_on:
+      - mongodb
+    volumes:
+      - ./api:/api
+    command: poetry run pytest tests/ -v --asyncio-mode=auto --cov=.
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - PYTHONPATH=/api
+
+volumes:
+  audhd:
+  

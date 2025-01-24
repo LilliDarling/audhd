@@ -1,0 +1,17 @@
+# Enviornment Variables
+api.env
+.env
+
+# Lock Files
+poetry.lock
+package-lock.json
+
+__pycache__
+.pytest_cache
+.coverage
+.expo
+node_modules
+
+
+firebase-admin-sdk.json
+.git
