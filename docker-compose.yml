@@ -3,9 +3,12 @@ services:
     build: ./app
     volumes:
       - ./app:/app
+      - /app/node_modules
     environment:
       BASE_URL: http://localhost:8082
       WEB_PORT: 8082
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: true
     ports:
       - "8082:8082"
     depends_on:
@@ -37,7 +40,7 @@ services:
     env_file: 
       - ./.env/mexpress.env
     ports:
-      - 8083:8081
+      - 8081:8081
     environment:
       WAIT_HOSTS: mongodb:27017
     depends_on:
