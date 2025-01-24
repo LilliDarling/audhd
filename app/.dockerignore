@@ -1,0 +1,12 @@
+.expo
+node_modules
+.gitignore
+README.md
+.git
+dist
+*.log
+.env*
+.cache
+.DS_Store
+*.pem
+coverage

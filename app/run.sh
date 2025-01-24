@@ -1,4 +1,3 @@
 #!/bin/bash
-npm install
-
-npm run web -- --port 8082
+pnpm install
+pnpm run web -- --port 8082
