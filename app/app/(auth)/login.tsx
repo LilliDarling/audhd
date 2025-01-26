@@ -16,7 +16,7 @@ export default function LoginScreen() {
         
         <View className="mt-6 flex-row justify-center">
           <Text className="text-gray-600">Don't have an account? </Text>
-          <Link href={{ pathname: "./register" }} className="text-indigo-600 font-semibold">
+          <Link href={{ pathname: "./signup" }} className="text-indigo-600 font-semibold">
             Sign up
           </Link>
         </View>
