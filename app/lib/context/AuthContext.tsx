@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const user = await authApi.checkAuth();
       dispatch({ type: 'SET_USER', payload: user });
+      router.replace("../(tabs)/tasks");
     } catch (error) {
       dispatch({ type: 'SIGN_OUT' });
       router.replace('/(auth)/login');
@@ -81,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const user = await authApi.signIn(credentials);
       dispatch({ type: 'SET_USER', payload: user });
-      router.replace("./../(tabs)");
+      router.replace("../(tabs)/tasks");
     } catch (error: any) {
       dispatch({ 
         type: 'SET_ERROR', 
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const user = await authApi.signUp(userData);
       dispatch({ type: 'SET_USER', payload: user });
-      router.replace("./../(tabs)");
+      router.replace("../(tabs)/tasks");
     } catch (error: any) {
       dispatch({ 
         type: 'SET_ERROR', 
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authApi.signOut();
       dispatch({ type: 'SIGN_OUT' });
-      router.replace("./../(auth)/login");
+      router.replace("../(auth)/login");
     } catch (error: any) {
       dispatch({ 
         type: 'SET_ERROR', 
