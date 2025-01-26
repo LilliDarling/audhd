@@ -22,7 +22,20 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const validateForm = () => {
+    if (formData.title.length < 5 || formData.title.length > 30) {
+      setError('Title must be between 5 and 30 characters');
+      return false;
+    }
+    if (formData.description.length < 5 || formData.description.length > 100) {
+      setError('Description must be between 5 and 100 characters');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
     try {
       setLoading(true);
       setError('');
@@ -46,6 +59,9 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
           onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
           placeholder="Task title"
         />
+        <Text className="text-gray-500 text-xs mt-1">
+          {formData.title.length}/30 characters
+        </Text>
       </View>
 
       <View>
@@ -58,6 +74,9 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
           multiline
           numberOfLines={3}
         />
+        <Text className="text-gray-500 text-xs mt-1">
+          {formData.description.length}/100 characters
+        </Text>
       </View>
 
       <View>
@@ -65,7 +84,7 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
         <View className="bg-white rounded-lg border border-gray-300">
           <Picker
             selectedValue={formData.priority}
-            onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
           >
             <Picker.Item label="Low" value={1} />
             <Picker.Item label="Medium" value={2} />
