@@ -5,18 +5,18 @@ import SignupForm from '@/lib/components/auth/SignupForm';
 
 export default function SignupScreen() {
   return (
-    <SafeAreaView className="flex-1">
-      <View className="flex-1 justify-center px-4">
-        <View className="mb-8">
-          <Text className="text-3xl font-bold text-gray-900">Create Account</Text>
-          <Text className="mt-2 text-gray-600">Sign up to get started</Text>
+    <SafeAreaView>
+      <View>
+        <View>
+          <Text>Create Account</Text>
+          <Text>Sign up to get started</Text>
         </View>
         
         <SignupForm />
         
-        <View className="mt-6 flex-row justify-center">
-          <Text className="text-gray-600">Already have an account? </Text>
-          <Link href={{ pathname: "./login" }} className="text-indigo-600 font-semibold">
+        <View>
+          <Text>Already have an account? </Text>
+          <Link href={{ pathname: "./login" }}>
             Sign in
           </Link>
         </View>

@@ -48,40 +48,38 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
   };
 
   return (
-    <View className="space-y-4">
-      {error && <Text className="text-red-500">{error}</Text>}
+    <View>
+      {error && <Text>{error}</Text>}
 
       <View>
-        <Text className="text-gray-700 font-medium mb-1">Title</Text>
+        <Text>Title</Text>
         <TextInput
-          className="bg-white p-3 rounded-lg border border-gray-300"
           value={formData.title}
           onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
           placeholder="Task title"
         />
-        <Text className="text-gray-500 text-xs mt-1">
+        <Text>
           {formData.title.length}/30 characters
         </Text>
       </View>
 
       <View>
-        <Text className="text-gray-700 font-medium mb-1">Description</Text>
+        <Text>Description</Text>
         <TextInput
-          className="bg-white p-3 rounded-lg border border-gray-300"
           value={formData.description}
           onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
           placeholder="Task description"
           multiline
           numberOfLines={3}
         />
-        <Text className="text-gray-500 text-xs mt-1">
+        <Text>
           {formData.description.length}/100 characters
         </Text>
       </View>
 
       <View>
-        <Text className="text-gray-700 font-medium mb-1">Priority</Text>
-        <View className="bg-white rounded-lg border border-gray-300">
+        <Text>Priority</Text>
+        <View>
           <Picker
             selectedValue={formData.priority}
             onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
@@ -96,9 +94,8 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
       <Pressable
         onPress={handleSubmit}
         disabled={loading}
-        className={`bg-indigo-600 p-4 rounded-lg ${loading ? 'opacity-50' : ''}`}
       >
-        <Text className="text-white text-center font-semibold">
+        <Text>
           {loading ? 'Creating...' : 'Create Task'}
         </Text>
       </Pressable>

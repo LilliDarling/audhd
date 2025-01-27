@@ -61,25 +61,22 @@ export default function SignupForm() {
 
   const renderField = (field: keyof typeof formData, label: string, options: any = {}) => (
     <View>
-      <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
+      <Text>{label}</Text>
       <TextInput
-        className={`w-full px-4 py-3 bg-white border rounded-lg ${
-          formErrors[field] ? 'border-red-500' : 'border-gray-300'
-        }`}
         value={formData[field]}
         onChangeText={(value) => updateField(field, value)}
         {...options}
       />
       {formErrors[field] && (
-        <Text className="text-red-500 text-sm mt-1">{formErrors[field]}</Text>
+        <Text>{formErrors[field]}</Text>
       )}
     </View>
   );
 
   return (
-    <View className="space-y-4">
+    <View>
       {authError && (
-        <Text className="text-red-500 text-sm">{authError}</Text>
+        <Text>{authError}</Text>
       )}
       
       {renderField('username', 'Username', {
@@ -105,13 +102,11 @@ export default function SignupForm() {
       <Pressable
         onPress={handleSignup}
         disabled={isLoading}
-        className={`w-full py-3 rounded-lg bg-indigo-600 
-          ${isLoading ? 'opacity-50' : 'opacity-100'}`}
       >
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white text-center font-semibold">Create Account</Text>
+          <Text>Create Account</Text>
         )}
       </Pressable>
     </View>

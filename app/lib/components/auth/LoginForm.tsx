@@ -42,19 +42,15 @@ export default function LoginForm() {
     }
   };
 
-  const getFieldErrorStyle = (field?: string) => 
-    field ? 'border-red-500' : 'border-gray-300';
-
   return (
-    <View className="space-y-4">
+    <View>
       {authError ? (
-        <Text className="text-red-500 text-sm">{authError}</Text>
+        <Text>{authError}</Text>
       ) : null}
       
       <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">Username</Text>
+        <Text>Username</Text>
         <TextInput
-          className={`w-full px-4 py-3 bg-white border rounded-lg ${getFieldErrorStyle(formErrors.username)}`}
           placeholder="Enter your username"
           value={username}
           onChangeText={(text) => {
@@ -66,14 +62,13 @@ export default function LoginForm() {
           textContentType="username"
         />
         {formErrors.username ? (
-          <Text className="text-red-500 text-sm mt-1">{formErrors.username}</Text>
+          <Text>{formErrors.username}</Text>
         ) : null}
       </View>
 
       <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
+        <Text>Password</Text>
         <TextInput
-          className={`w-full px-4 py-3 bg-white border rounded-lg ${getFieldErrorStyle(formErrors.password)}`}
           placeholder="Enter your password"
           value={password}
           onChangeText={(text) => {
@@ -85,20 +80,18 @@ export default function LoginForm() {
           textContentType="password"
         />
         {formErrors.password ? (
-          <Text className="text-red-500 text-sm mt-1">{formErrors.password}</Text>
+          <Text>{formErrors.password}</Text>
         ) : null}
       </View>
 
       <Pressable
         onPress={handleLogin}
         disabled={isLoading}
-        className={`w-full py-3 rounded-lg bg-indigo-600 
-          ${isLoading ? 'opacity-50' : 'opacity-100'}`}
       >
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white text-center font-semibold">Sign In</Text>
+          <Text>Sign In</Text>
         )}
       </Pressable>
     </View>

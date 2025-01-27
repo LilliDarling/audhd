@@ -1,17 +1,16 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '@/lib/context/AuthContext';
-import { PropsWithChildren } from 'react';
 
-export default function RootLayout({ children }: PropsWithChildren) {
+export default function RootLayout() {
   return (
     <AuthProvider>
       <Stack screenOptions={{
         headerShown: false,
       }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="tasks" />
       </Stack>
-      {children}
     </AuthProvider>
   );
 }
