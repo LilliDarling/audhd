@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface TaskCardProps {
@@ -25,26 +25,37 @@ const statusColors = {
 };
 
 export default function TaskCard({ task }: TaskCardProps) {
+  const router = useRouter();
+  
+  const formatStatus = (status: string) => {
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const handlePress = () => {
+    router.push(`/tasks/${task.id}`);
+  };
+
   return (
-    <Link href={`/tasks/${task.id}`} asChild>
-      <Pressable>
+    <Pressable onPress={handlePress}>
+      <View>
         <View>
-          <View>
-            <Text>{task.title}</Text>
-            <Text numberOfLines={2}>{task.description}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          <Text>{task.title}</Text>
+          <Text numberOfLines={2}>{task.description}</Text>
         </View>
-        
+        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+      </View>
+      
+      <View>
         <View>
-          <View>
-            <Text>Priority {task.priority}</Text>
-          </View>
-          <View>
-            <Text>{task.status.replace('_', ' ')}</Text>
-          </View>
+          <Text>Priority {task.priority}</Text>
         </View>
-      </Pressable>
-    </Link>
+        <View>
+          <Text>{formatStatus(task.status)}</Text>
+        </View>
+      </View>
+    </Pressable>
   );
 }
