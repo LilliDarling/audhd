@@ -1,9 +1,10 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TasksLayout() {
+  const router = useRouter();
   return (
     <Stack
       screenOptions={{
@@ -11,6 +12,18 @@ export default function TasksLayout() {
         headerStyle: {
           backgroundColor: '#f8fafc',
         },
+        headerLeft: () => (
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.5 : 1,
+              padding: 8,
+            })}
+          >
+            <Ionicons name="chevron-back" size={24} color="#6366f1" />
+          </Pressable>
+        ),
       }}
     >
       <Stack.Screen 
@@ -43,7 +56,7 @@ export default function TasksLayout() {
         name="[id]" 
         options={{
           title: 'Task Details',
-          headerBackTitle: 'Back'
+          headerBackTitle: 'Tasks'
         }}
       />
     </Stack>
