@@ -1,0 +1,21 @@
+/* ./src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 14px;
+  font-family: "Roboto", sans-serif;
+}
+
+.scrollbar::-webkit-scrollbar {
+  @apply w-6 bg-none;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-secondary rounded-full border-8 border-solid border-transparent bg-clip-padding;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  @apply bg-none;
+}
