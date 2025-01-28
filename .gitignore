@@ -15,3 +15,4 @@ node_modules
 
 firebase-admin-sdk.json
 .git
+.DS_Store
