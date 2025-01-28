@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import GoogleAuthButton from '@/lib/components/calendar/GoogleAuthButton';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { Ionicons } from '@expo/vector-icons';
 import { tasksApi } from '@/lib/api/tasks';
@@ -83,6 +84,7 @@ export default function TaskDetailScreen() {
         options={{
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
+              <GoogleAuthButton />
               <Pressable 
                 onPress={() => router.push(`/tasks/${task.id}/edit`)}
                 style={{ marginRight: 15 }}
