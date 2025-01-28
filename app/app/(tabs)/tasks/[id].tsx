@@ -82,9 +82,17 @@ export default function TaskDetailScreen() {
       <Stack.Screen 
         options={{
           headerRight: () => (
-            <Pressable onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={24} color="red" />
-            </Pressable>
+            <View style={{ flexDirection: 'row' }}>
+              <Pressable 
+                onPress={() => router.push(`/tasks/${task.id}/edit`)}
+                style={{ marginRight: 15 }}
+              >
+                <Ionicons name="pencil" size={24} color="#6366f1" />
+              </Pressable>
+              <Pressable onPress={handleDelete}>
+                <Ionicons name="trash-outline" size={24} color="red" />
+              </Pressable>
+            </View>
           ),
         }}
       />

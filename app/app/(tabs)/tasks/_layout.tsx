@@ -59,6 +59,13 @@ export default function TasksLayout() {
           headerBackTitle: 'Tasks'
         }}
       />
+      <Stack.Screen 
+        name="[id]/edit" 
+        options={{
+          title: 'Edit Task',
+          headerBackTitle: 'Details'
+        }}
+      />
     </Stack>
   );
 }
