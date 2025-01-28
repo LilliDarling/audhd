@@ -51,7 +51,7 @@ export default function GoogleAuthButton() {
   if (isConnected) {
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="logo-google" size={24} color="#22c55e" />
+        <Ionicons name="calendar-number-outline" size={24} color="#22c55e" />
         <Text style={{ marginLeft: 8 }}>Calendar Connected</Text>
       </View>
     );
