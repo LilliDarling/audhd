@@ -30,7 +30,7 @@ export function useTasks() {
   const createTask = async (taskData: Omit<Task, 'id'>) => {
     try {
       const newTask = await tasksApi.createTask(taskData);
-      setTasks(prev => [...prev, newTask]);
+      setTasks(currentTasks => [...currentTasks, newTask]);
       return newTask;
     } catch (err: any) {
       throw new Error(err.message || 'Failed to create task');
@@ -40,9 +40,11 @@ export function useTasks() {
   const updateTask = async (id: string, taskData: Partial<Omit<Task, 'id'>>) => {
     try {
       const updatedTask = await tasksApi.updateTask(id, taskData);
-      setTasks(prev => prev.map(task => 
-        task.id === id ? updatedTask : task
-      ));
+      setTasks(currentTasks => 
+        currentTasks.map(task => 
+          task.id === id ? updatedTask : task
+        )
+      );
       return updatedTask;
     } catch (err: any) {
       throw new Error(err.message || 'Failed to update task');
@@ -52,7 +54,7 @@ export function useTasks() {
   const deleteTask = async (id: string) => {
     try {
       await tasksApi.deleteTask(id);
-      setTasks(prev => prev.filter(task => task.id !== id));
+      setTasks(currentTasks => currentTasks.filter(task => task.id !== id));
     } catch (err: any) {
       throw new Error(err.message || 'Failed to delete task');
     }

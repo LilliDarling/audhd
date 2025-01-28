@@ -96,7 +96,7 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
         disabled={loading}
       >
         <Text>
-          {loading ? 'Creating...' : 'Create Task'}
+        {loading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Task' : 'Create Task')}
         </Text>
       </Pressable>
     </View>

@@ -1,10 +1,20 @@
 import React from 'react';
 import { View, Text, FlatList } from 'react-native';
+import { useNavigation } from 'expo-router';
 import TaskCard from '@/lib/components/tasks/TaskCard';
 import { useTasks } from '@/lib/hooks/useTasks';
 
 export default function TasksScreen() {
-  const { tasks, isLoading, error } = useTasks();
+  const { tasks, isLoading, error, refreshTasks } = useTasks();
+  const navigation = useNavigation();
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      refreshTasks();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View>

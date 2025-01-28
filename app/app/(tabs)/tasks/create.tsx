@@ -5,7 +5,7 @@ import TaskForm from '@/lib/components/tasks/TaskForm';
 import { useTasks } from '@/lib/hooks/useTasks';
 
 export default function CreateTaskScreen() {
-  const { createTask } = useTasks();
+  const { createTask, refreshTasks } = useTasks();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -15,7 +15,8 @@ export default function CreateTaskScreen() {
     try {
       setIsSubmitting(true);
       await createTask(data);
-      router.back();
+      await refreshTasks();
+      router.push('/(tabs)/tasks');
     } catch (error) {
       console.error('Failed to create task:', error);
       Alert.alert(
