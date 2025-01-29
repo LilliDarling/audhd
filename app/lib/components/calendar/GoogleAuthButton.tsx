@@ -2,25 +2,20 @@ import React from 'react';
 import { View, Pressable, Text, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
-import { useCalendar } from '@/lib/hooks/useCalendar';
 import { GOOGLE_CONFIG } from '@/lib/config/google';
+import { calendarApi } from '@/lib/api/calendar';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export default function GoogleAuthButton() {
-  const { connectCalendar, isConnecting, isConnected } = useCalendar();
-
+export default function GoogleCalendarButton() {
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: GOOGLE_CONFIG.clientId,
-    iosClientId: GOOGLE_CONFIG.iosClientId,
-    androidClientId: GOOGLE_CONFIG.androidClientId,
-    webClientId: GOOGLE_CONFIG.webClientId,
     scopes: ['https://www.googleapis.com/auth/calendar'],
-    redirectUri: makeRedirectUri({
-      scheme: 'myapp'
-    }),
+    responseType: 'code',
+    extraParams: {
+      access_type: 'offline',
+    },
   });
 
   React.useEffect(() => {
@@ -32,44 +27,28 @@ export default function GoogleAuthButton() {
 
   const handleGoogleToken = async (authentication: any) => {
     try {
-      const success = await connectCalendar({
+      await calendarApi.connectGoogle({
         access_token: authentication.accessToken,
         refresh_token: authentication.refreshToken
       });
-      
-      if (success) {
-        Alert.alert('Success', 'Calendar connected successfully');
-      } else {
-        Alert.alert('Error', 'Failed to connect calendar');
-      }
+      Alert.alert('Success', 'Calendar connected successfully');
     } catch (error) {
       console.error('Failed to connect calendar:', error);
       Alert.alert('Error', 'Failed to connect calendar');
     }
   };
 
-  if (isConnected) {
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="calendar-number-outline" size={24} color="#22c55e" />
-        <Text style={{ marginLeft: 8 }}>Calendar Connected</Text>
-      </View>
-    );
-  }
-
   return (
     <Pressable 
       onPress={() => promptAsync()}
-      disabled={!request || isConnecting}
+      disabled={!request}
       style={({ pressed }) => ({
-        opacity: (pressed || isConnecting) ? 0.5 : 1
+        opacity: pressed ? 0.5 : 1
       })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Ionicons name="calendar" size={24} color="#6366f1" />
-        <Text style={{ marginLeft: 8 }}>
-          {isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
-        </Text>
+        <Text style={{ marginLeft: 8 }}>Connect Google Calendar</Text>
       </View>
     </Pressable>
   );
