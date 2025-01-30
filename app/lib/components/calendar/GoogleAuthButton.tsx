@@ -1,21 +1,19 @@
 import React from 'react';
-import { View, Pressable, Text, Alert } from 'react-native';
+import { View, Pressable, Text, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import { GOOGLE_CONFIG } from '@/lib/config/google';
 import { calendarApi } from '@/lib/api/calendar';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export default function GoogleCalendarButton() {
+export default function GoogleAuthButton() {
   const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_CONFIG.webClientId,
     clientId: GOOGLE_CONFIG.clientId,
-    scopes: ['https://www.googleapis.com/auth/calendar'],
-    responseType: 'code',
-    extraParams: {
-      access_type: 'offline',
-    },
+    scopes: ['https://www.googleapis.com/auth/calendar']
   });
 
   React.useEffect(() => {
