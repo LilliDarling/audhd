@@ -13,7 +13,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAssistant } from '@/lib/hooks/useAssistant';
 import MessageBubble from '@/lib/components/assistant/MessageBubble';
 import VoiceRecorder from '@/lib/components/assistant/VoiceRecorder';
-import { AssistantMessage, AssistantResponse } from '@/lib/api/assistant';
+import { AssistantMessage, TaskBreakdown } from '@/lib/api/assistant';
+import axios from 'axios';
+
+interface AssistantResponse {
+  content: string;
+  task_breakdown?: TaskBreakdown;
+  suggested_tasks?: string[];
+  calendar_suggestions?: any[];
+  dopamine_boosters?: string[];
+  focus_tips?: string[];
+  executive_function_supports?: any[];
+  environment_adjustments?: string[];
+}
 
 export default function AssistantScreen() {
   const [message, setMessage] = useState('');
@@ -23,16 +35,27 @@ export default function AssistantScreen() {
 
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
-    
+  
     const currentMessage = message;
     setMessage('');
-    
+  
     try {
-      const response = await sendMessage(currentMessage);
-      setLastResponse(response);
+      const response = await axios.post<AssistantResponse>('/api/assistant/message', { message: currentMessage }, {
+        withCredentials: true, // Ensure cookies are sent with the request
+      });
+      setLastResponse(response.data); // response.data is now typed as AssistantResponse
       flatListRef.current?.scrollToEnd({ animated: true });
     } catch (error) {
-      console.error('Failed to send message:', error);
+      if (error instanceof Error) {
+        console.error('Failed to send message:', error.message);
+        if (error.message === 'No JWT token found. Please log in.') {
+          alert('Please log in to use the assistant.');
+          // Optionally, redirect to the login page:
+          // router.push('/login');
+        }
+      } else {
+        console.error('An unknown error occurred:', error);
+      }
     }
   };
 
