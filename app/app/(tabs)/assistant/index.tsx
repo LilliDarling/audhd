@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { 
-  View, 
+  View,
+  Text, 
   TextInput, 
   Pressable, 
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  type FlatList as FlatListType
+  type FlatList as FlatListType,
+  Alert
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +17,7 @@ import MessageBubble from '@/lib/components/assistant/MessageBubble';
 import VoiceRecorder from '@/lib/components/assistant/VoiceRecorder';
 import { AssistantMessage, TaskBreakdown } from '@/lib/api/assistant';
 import axios from 'axios';
+import { useAuth } from '@/lib/context/AuthContext';
 
 interface AssistantResponse {
   content: string;
@@ -28,34 +31,64 @@ interface AssistantResponse {
 }
 
 export default function AssistantScreen() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const [message, setMessage] = useState('');
-  const [lastResponse, setLastResponse] = useState<AssistantResponse | undefined>(undefined);
-  const { messages, isLoading, sendMessage, sendVoiceMessage } = useAssistant();
+  const [lastResponse, setLastResponse] = useState<AssistantResponse | undefined>();
+  const { messages, isLoading, error, sendMessage, sendVoiceMessage } = useAssistant();
   const flatListRef = useRef<FlatListType<AssistantMessage>>(null);
+
+  if (authLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Please log in to use the assistant</Text>
+      </View>
+    );
+  }
 
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
-  
+    
     const currentMessage = message;
     setMessage('');
   
     try {
-      const response = await axios.post<AssistantResponse>('/api/assistant/message', { message: currentMessage }, {
-        withCredentials: true, // Ensure cookies are sent with the request
-      });
-      setLastResponse(response.data); // response.data is now typed as AssistantResponse
+      console.log('Starting message send...');
+      const response = await axios.post(
+        'http://localhost:8000/api/assistant/message',  // Use full URL
+        { message: currentMessage },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          withCredentials: true
+        }
+      );
+      
+      console.log('Raw response:', response);
+      console.log('Response data:', response.data);
+      
+      if (!response.data || !response.data.content) {
+        throw new Error('Invalid response format from server');
+      }
+  
+      setLastResponse(response.data);
       flatListRef.current?.scrollToEnd({ animated: true });
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Failed to send message:', error.message);
-        if (error.message === 'No JWT token found. Please log in.') {
-          alert('Please log in to use the assistant.');
-          // Optionally, redirect to the login page:
-          // router.push('/login');
-        }
-      } else {
-        console.error('An unknown error occurred:', error);
+      console.error('Complete error object:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Request config:', error.config);
+        console.error('Response:', error.response);
       }
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send message');
     }
   };
 
@@ -66,6 +99,7 @@ export default function AssistantScreen() {
       flatListRef.current?.scrollToEnd({ animated: true });
     } catch (error) {
       console.error('Failed to send voice message:', error);
+      Alert.alert('Error', 'Failed to process voice message');
     }
   };
 

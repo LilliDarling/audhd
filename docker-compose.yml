@@ -1,28 +1,51 @@
 services:
-  expo:
-    build: ./app
-    volumes:
-      - ./app:/app
-      - /app/node_modules
-    environment:
-      BASE_URL: http://localhost:8082
-      WEB_PORT: 8082
-      NODE_ENV: development
-      CHOKIDAR_USEPOLLING: true
+  # expo:
+  #   build: ./app
+  #   volumes:
+  #     - ./app:/app
+  #     - /app/node_modules
+  #   environment:
+  #     BASE_URL: http://localhost:8082
+  #     WEB_PORT: 8082
+  #     NODE_ENV: development
+  #     CHOKIDAR_USEPOLLING: true
+  #   ports:
+  #     - "8082:8082"
+  #   depends_on:
+  #     - api
+
+  ollama:
+    image: ollama/ollama:latest
     ports:
-      - "8082:8082"
-    depends_on:
-      - api
+      - "11434:11434"
+    volumes:
+      - ~/.ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    networks:
+      - app-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
   api:
     env_file: 
       - ./.env/api.env
     build: ./api
+    environment: 
+      - OLLAMA_HOST=http://ollama:11434
     ports:
       - "8000:8000"
     depends_on:
       - mongodb
+      - ollama
     volumes:
       - ./api:/api
+    networks:
+      - app-network
 
   mongodb:
     image: mongo
@@ -61,4 +84,9 @@ services:
 
 volumes:
   audhd:
+  ollama:
+
+networks:
+  app-network:
+    driver: bridge
   

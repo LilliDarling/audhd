@@ -1,11 +1,10 @@
 import re
 import os
+import anthropic
 import logging
-import traceback
-import requests
-from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
-from openai import OpenAI  # Keep for voice transcription
+from datetime import datetime, timezone, UTC
+from typing import List, Dict, Any
+from openai import OpenAI
 
 from models.assistant import AssistantMessage, AssistantResponse, TaskBreakdown
 from queries.calendar import CalendarQueries
@@ -14,78 +13,17 @@ from utils.exceptions import handle_database_operation
 from models.tasks import Task
 from config.database import engine
 
+
 logger = logging.getLogger(__name__)
 
 class ADHDAssistantQueries:
     def __init__(self):
-      print("Initializing ADHDAssistantQueries")
-      self.api_url = "http://ollama:11434/api/generate"
-      self.model = "llama2"  # Base model is better for testing
-      print("Starting model pull...")
-      self._ensure_model()
-    
-    def _ensure_model(self):
-      """Pull the model if not already present"""
-      try:
-          response = requests.post(
-              "http://ollama:11434/api/pull",
-              json={
-                  "name": self.model,
-                  "stream": False
-              }
-          )
-          if response.status_code == 200:
-              print(f"Model {self.model} ready")
-          else:
-              print(f"Error pulling model: {response.status_code}")
-              print(f"Response: {response.text}")
-      except Exception as e:
-          print(f"Exception during model pull: {e}")
+        print("Initializing ADHDAssistantQueries")
+        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            logger.error("ANTHROPIC_API_KEY not found in environment variables")
 
-    async def _get_model_response(self, prompt: str, history: List[Dict[str, str]] = None) -> Optional[str]:
-      try:
-          # Format history and prompt
-          formatted_messages = ""
-          if history:
-              for msg in history:
-                  role = "Human" if msg["role"] == "user" else "Assistant"
-                  formatted_messages += f"{role}: {msg['content']}\n"
-              
-          full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
-
-          print(f"Sending request to Ollama with prompt length: {len(full_prompt)}")
-          response = requests.post(
-              self.api_url,
-              json={
-                  "model": self.model,
-                  "prompt": full_prompt,
-                  "stream": False,
-                  "options": {
-                      "temperature": 0.7,
-                      "num_predict": 1000,
-                      "stop": ["Human:", "Assistant:"]  # Add stop sequences
-                  }
-              }
-          )
-          print(f"Got response status: {response.status_code}")
-          
-          if response.status_code == 200:
-              data = response.json()
-              if "error" in data:
-                  print(f"Error in response: {data['error']}")
-                  return None
-              return data['response']
-          else:
-              print(f"Error from Ollama API: {response.text}")
-              return None
-              
-      except Exception as e:
-          print(f"Error getting model response: {str(e)}")
-          print(f"Full traceback: {traceback.format_exc()}")
-          return None
-        
     def _create_system_prompt(self, tasks: List[Task], has_calendar: bool) -> str:
-        # Keep your existing prompt creation method
         prompt = """You are a supportive ADHD-focused productivity assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging.
 
         Key ADHD Support Principles:
@@ -130,16 +68,24 @@ class ADHDAssistantQueries:
         - Time estimates for each step (accounting for ADHD tax)
 
         Current user context:"""
-
+            
         if tasks:
             prompt += "\nExisting tasks:\n"
             for task in tasks:
                 prompt += f"- {task.title} (Priority: {task.priority}, Status: {task.status})\n"
         
+        if has_calendar:
+            prompt += "\nGoogle Calendar is connected for time-blocking and reminders."
+        
         return prompt
-
+    
     @handle_database_operation("saving message")
-    async def save_message(self, user_id: str, content: str, message_type: str = "user") -> AssistantMessage:
+    async def save_message(
+        self, 
+        user_id: str, 
+        content: str, 
+        message_type: str = "user"
+    ) -> AssistantMessage:
         message = AssistantMessage(
             user_id=user_id,
             content=content,
@@ -148,9 +94,13 @@ class ADHDAssistantQueries:
         )
         await engine.save(message)
         return message
-
+    
     @handle_database_operation("retrieving conversation history")
-    async def get_conversation_history(self, user_id: str, limit: int = 10) -> List[AssistantMessage]:
+    async def get_conversation_history(
+        self, 
+        user_id: str, 
+        limit: int = 10
+    ) -> List[AssistantMessage]:
         messages = await engine.find(
             AssistantMessage,
             AssistantMessage.user_id == user_id,
@@ -172,7 +122,9 @@ class ADHDAssistantQueries:
 
         try:
             await self.save_message(user_id, content, "user")
+
             tasks = await task_queries.get_tasks(user_id)
+            # calendar_creds = await calendar_queries.get_credentials(user_id)
             has_calendar = False
             history = await self.get_conversation_history(user_id)
 
@@ -182,13 +134,17 @@ class ADHDAssistantQueries:
             system_prompt = self._create_system_prompt(tasks, has_calendar)
             messages = self._create_chat_messages(system_prompt, history)
             
-            print("Calling Ollama API...")
-            assistant_message = await self._get_model_response(system_prompt, messages)
+            print("Calling Anthropic API...")
+            response = await self.client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                temperature=0.7,
+                system=system_prompt,
+                messages=messages
+            )
             
-            if not assistant_message:
-                raise Exception("Failed to get model response")
-            
-            print("Got response from Ollama")
+            print("Got response from Anthropic")
+            assistant_message = response.content[0].text
             
             saved_message = await self.save_message(
                 user_id, 
@@ -197,6 +153,7 @@ class ADHDAssistantQueries:
             )
             
             suggestions = self._extract_adhd_suggestions(assistant_message)
+
             result = AssistantResponse.from_mongo(saved_message, suggestions)
             print("Successfully processed message")
             
@@ -209,7 +166,6 @@ class ADHDAssistantQueries:
             raise
 
     def _extract_adhd_suggestions(self, response: str) -> Dict[str, Any]:
-        # Keep your existing suggestion extraction logic
         suggestions = {
             "tasks": [],
             "calendar_events": [],
@@ -219,9 +175,64 @@ class ADHDAssistantQueries:
             "environment_tips": [],
             "task_breakdown": None
         }
-        # [Rest of your existing extraction code]
+        
+        current_section = None
+        breakdown_data = {
+            "subtasks": [],
+            "initiation_tips": [],
+            "dopamine_hooks": [],
+            "break_points": []
+        }
+        
+        for line in response.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            if line.startswith("BREAKDOWN:"):
+                current_section = "breakdown"
+                breakdown_data["main_task"] = line.replace("BREAKDOWN:", "").strip()
+            elif line.startswith("- ") and current_section == "breakdown":
+                breakdown_data["subtasks"].append(line.replace("- ", ""))
+            elif line.startswith("QUICK_WIN:"):
+                suggestions["dopamine_boosters"].append(line.replace("QUICK_WIN:", "").strip())
+            elif line.startswith("START_NOW:"):
+                breakdown_data["initiation_tips"].append(line.replace("START_NOW:", "").strip())
+            elif line.startswith("TIME_TIP:"):
+                try:
+                    time_str = line.replace("TIME_TIP:", "").strip()
+                    if "estimated_time" not in breakdown_data:
+                        breakdown_data["estimated_time"] = int(re.search(r'\d+', time_str).group())
+                except:
+                    pass
+            elif line.startswith("FOCUS:"):
+                suggestions["focus_tips"].append(line.replace("FOCUS:", "").strip())
+            elif line.startswith("EF_SUPPORT:"):
+                suggestions["ef_supports"].append({
+                    "strategy": line.replace("EF_SUPPORT:", "").strip(),
+                    "category": "task_initiation" if "start" in line.lower() else "organization"
+                })
+            elif line.startswith("ENVIRONMENT:"):
+                suggestions["environment_tips"].append(line.replace("ENVIRONMENT:", "").strip())
+            elif line.startswith("CALENDAR:"):
+                suggestions["calendar_events"].append(line.replace("CALENDAR:", "").strip())
+        
+        if breakdown_data.get("main_task"):
+            suggestions["task_breakdown"] = TaskBreakdown(
+                main_task=breakdown_data["main_task"],
+                subtasks=breakdown_data["subtasks"],
+                estimated_time=breakdown_data.get("estimated_time", 30),
+                difficulty_level=2,
+                energy_level_needed=2,
+                context_switches=len(set(s.split()[0] for s in breakdown_data["subtasks"])),
+                initiation_tips=breakdown_data["initiation_tips"],
+                dopamine_hooks=breakdown_data["dopamine_hooks"],
+                break_points=[i for i, s in enumerate(breakdown_data["subtasks"]) 
+                            if i > 0 and i % 3 == 0]  # Suggest breaks every 3 subtasks
+            )
+        
         return suggestions
-
+    
     async def process_voice(
         self,
         user_id: str,
@@ -229,7 +240,6 @@ class ADHDAssistantQueries:
         task_queries: TaskQueries,
         calendar_queries: CalendarQueries
     ) -> AssistantResponse:
-        # Keep OpenAI for voice transcription since it works well
         openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         audio_file = self._prepare_audio_file(voice_data)
         transcript = await openai_client.audio.transcriptions.create(
@@ -250,15 +260,31 @@ class ADHDAssistantQueries:
         history: List[AssistantMessage]
     ) -> List[Dict[str, str]]:
         messages = []
+        
         for msg in history:
             messages.append({
                 "role": "user" if msg.type == "user" else "assistant",
                 "content": msg.content
             })
+        
         return messages
+    
+    def _extract_suggestions(self, response: str) -> Dict[str, Any]:
+        suggestions = {
+            "tasks": [],
+            "calendar_events": []
+        }
+        
+        for line in response.split('\n'):
+            if line.strip().startswith("TASK:"):
+                suggestions["tasks"].append(line.replace("TASK:", "").strip())
+            elif line.strip().startswith("CALENDAR:"):
+                suggestions["calendar_events"].append(line.replace("CALENDAR:", "").strip())
+            
+        return suggestions
 
     def _prepare_audio_file(self, base64_audio: str) -> bytes:
-        # Keep your existing audio file preparation code
+        # Convert base64 to bytes and prepare for Whisper API
         import base64
         import tempfile
         

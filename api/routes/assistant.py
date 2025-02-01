@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+import logging
+from fastapi import APIRouter, Depends, Request, HTTPException
 from typing import List
 
 from models.users import UserResponse
-from models.assistant import AssistantResponse, AssistantMessage, VoiceRequest
+from models.assistant import AssistantResponse, AssistantMessage, VoiceRequest, MessageRequest
 from queries.assistant import ADHDAssistantQueries
 from queries.tasks import TaskQueries
 from queries.calendar import CalendarQueries
@@ -12,23 +13,44 @@ from utils.exceptions import AuthExceptions
 
 router = APIRouter(tags=["ADHDAssistant"], prefix="/api/assistant")
 
-@router.post("/message")
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+@router.post("/message", response_model=AssistantResponse)
 async def send_message(
-    message: str,
+    request: Request,
+    message_data: MessageRequest,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     assistant_queries: ADHDAssistantQueries = Depends(),
     task_queries: TaskQueries = Depends(),
     calendar_queries: CalendarQueries = Depends()
 ) -> AssistantResponse:
+    print(f"=== Received message request ===")
+    print(f"Headers: {request.headers}")
+    print(f"Message data: {message_data}")
+    print(f"Current user: {current_user}")
+    
     if not current_user:
+        print("No user found - unauthorized")
         raise AuthExceptions.unauthorized()
     
-    return await assistant_queries.process_message(
-        current_user.id,
-        message,
-        task_queries,
-        calendar_queries
-    )
+    try:
+        response = await assistant_queries.process_message(
+            current_user.id,
+            message_data.message,
+            task_queries,
+            calendar_queries
+        )
+        print(f"Generated response: {response}")
+        return response
+    except Exception as e:
+        print(f"Error processing message: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise
 
 @router.post("/voice")
 async def send_voice(

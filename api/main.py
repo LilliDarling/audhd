@@ -1,16 +1,26 @@
 from fastapi import FastAPI
+import logging
 from routes import auth, tasks, calendar, assistant
 from fastapi.middleware.cors import CORSMiddleware
 
+logging.getLogger("pymongo.topology").setLevel(logging.WARNING)
+logging.getLogger("pymongo.connection").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("pymongo.serverSelection").setLevel(logging.WARNING)
+logging.getLogger("pymongo.command").setLevel(logging.WARNING)
 
 api = FastAPI()
 
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8082"],
+    allow_origins=[
+      "http://localhost:8082",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 api.include_router(tasks.router, tags=["Tasks"])

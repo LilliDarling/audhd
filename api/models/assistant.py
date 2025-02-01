@@ -6,13 +6,16 @@ from odmantic import Model, Field
 class AssistantMessage(Model):
     user_id: str
     content: str
-    timestamp: datetime
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     type: str = Field(default="user")  # "user" or "assistant"
     category: Optional[str] = Field(default=None)  # "task_breakdown", "motivation", "time_management", etc.
 
     model_config = {
         "collection": "assistant_messages"
     }
+
+class MessageRequest(BaseModel):
+    message: str
 
 class VoiceRequest(BaseModel):
     audio_data: str
