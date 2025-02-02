@@ -1,3 +1,4 @@
+import "../global.css"
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 import { useEffect } from 'react';

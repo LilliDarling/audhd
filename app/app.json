@@ -23,7 +23,9 @@
       "port": 8082,
       "build": {
         "babel": {
-          "include": ["@expo/vector-icons"]
+          "include": [
+            "@expo/vector-icons"
+          ]
         }
       }
     },
@@ -37,7 +39,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

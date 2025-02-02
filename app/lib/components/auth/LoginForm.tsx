@@ -43,14 +43,15 @@ export default function LoginForm() {
   };
 
   return (
-    <View>
+    <View className="flex-1 items-center justify-center p-4 w-full">
       {authError ? (
         <Text>{authError}</Text>
       ) : null}
-      
+
       <View>
-        <Text>Username</Text>
+        <Text className='text-yellow-500 mb-4'>Username</Text>
         <TextInput
+          className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-600 p-2 rounded-lg"
           placeholder="Enter your username"
           value={username}
           onChangeText={(text) => {
@@ -67,8 +68,9 @@ export default function LoginForm() {
       </View>
 
       <View>
-        <Text>Password</Text>
+        <Text className='text-yellow-500 mb-4'>Password</Text>
         <TextInput
+          className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-600 p-2 rounded-lg"
           placeholder="Enter your password"
           value={password}
           onChangeText={(text) => {
@@ -91,7 +93,8 @@ export default function LoginForm() {
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text>Sign In</Text>
+          <Text className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-500 px-6 py-2 rounded-lg">Sign In</Text>
+
         )}
       </Pressable>
     </View>
