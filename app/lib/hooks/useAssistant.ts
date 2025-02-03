@@ -2,13 +2,47 @@ import { useState, useCallback, useEffect } from 'react';
 import { assistantApi, AssistantMessage, AssistantResponse } from '@/lib/api/assistant';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import _ from 'lodash';
 
 export function useAssistant() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const token = user?.token;
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const debouncedSendMessage = useCallback(
+    _.debounce(async (content: string): Promise<AssistantResponse> => {
+      if (!isAuthenticated || !user) {
+        throw new Error('Please log in to use the assistant.');
+      }
+
+      try {
+        const response = await axios.post<AssistantResponse>(
+          '/api/assistant/message', 
+          { message: content },
+          {
+            withCredentials: true,
+            // Add timeout
+            timeout: 30000,
+            // Add retry logic
+            validateStatus: (status) => status === 200
+          }
+        );
+
+        if (!response.data?.content) {
+          throw new Error('Invalid response from assistant');
+        }
+
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          throw new Error('Please log in to use the assistant.');
+        }
+        throw error;
+      }
+    }, 300),
+    [isAuthenticated, user]
+  );
 
   const loadHistory = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -26,50 +60,27 @@ export function useAssistant() {
   }, [isAuthenticated]);
 
   const sendMessage = async (content: string): Promise<AssistantResponse> => {
-    if (!isAuthenticated || !user) {
-      throw new Error('Please log in to use the assistant.');
-    }
-
     setIsLoading(true);
     try {
-      console.log("Starting to send message:", content);
       const userMessage: AssistantMessage = {
-        user_id: user.id,
-        content: content,
+        user_id: user?.id ?? '',
+        content,
         timestamp: new Date().toISOString(),
         type: 'user'
       };
       setMessages(prev => [...prev, userMessage]);
 
-      console.log("Making API request...");
-      const response = await axios.post<AssistantResponse>(
-        '/api/assistant/message', 
-        { message: content },
-        {
-          withCredentials: true
-        }
-      );
-      console.log("Received API response:", response.data);
-
-      if (!response.data || !response.data.content) {
-        throw new Error('Invalid response from assistant');
-      }
-
+      const response = await debouncedSendMessage(content);
+      
       const assistantMessage: AssistantMessage = {
         user_id: 'assistant',
-        content: response.data.content,
+        content: response.content,
         timestamp: new Date().toISOString(),
         type: 'assistant'
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      return response.data;
-    } catch (error) {
-      console.error('Error in sendMessage:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw new Error('Please log in to use the assistant.');
-      }
-      throw error;
+      return response;
     } finally {
       setIsLoading(false);
     }

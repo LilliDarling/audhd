@@ -28,29 +28,37 @@ async def send_message(
     task_queries: TaskQueries = Depends(),
     calendar_queries: CalendarQueries = Depends()
 ) -> AssistantResponse:
-    print(f"=== Received message request ===")
-    print(f"Headers: {request.headers}")
-    print(f"Message data: {message_data}")
-    print(f"Current user: {current_user}")
-    
     if not current_user:
-        print("No user found - unauthorized")
         raise AuthExceptions.unauthorized()
     
     try:
+        # Add request context logging
+        logger.info(f"Processing message for user {current_user.id}")
+        logger.debug(f"Message content: {message_data.message[:50]}...")
+        
         response = await assistant_queries.process_message(
             current_user.id,
             message_data.message,
             task_queries,
             calendar_queries
         )
-        print(f"Generated response: {response}")
+        
+        # Add response validation
+        if not response or not response.get('content'):
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid response from assistant"
+            )
+            
         return response
+        
     except Exception as e:
-        print(f"Error processing message: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        raise
+        logger.error(f"Error processing message: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process message"
+        )
+
 
 @router.post("/voice")
 async def send_voice(

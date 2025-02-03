@@ -56,6 +56,8 @@ services:
       - audhd:/data/db
     ports:
       - "27017:27017"
+    networks:
+      - app-network
 
   mongo-express:
     image: mongo-express
@@ -68,6 +70,8 @@ services:
       WAIT_HOSTS: mongodb:27017
     depends_on:
       - mongodb
+    networks:
+      - app-network
   
   test:
     build: ./api
