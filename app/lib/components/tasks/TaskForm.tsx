@@ -49,7 +49,11 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
 
   return (
     <View>
-      {error && <Text>{error}</Text>}
+      {error && (
+        <View>
+          <Text>{error}</Text>
+        </View>
+      )}
 
       <View>
         <Text>Title</Text>

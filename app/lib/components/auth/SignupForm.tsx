@@ -60,40 +60,43 @@ export default function SignupForm() {
   };
 
   const renderField = (field: keyof typeof formData, label: string, options: any = {}) => (
-    <View>
-      <Text>{label}</Text>
+    <View className="flex w-full items-center justify-center">
+
+
       <TextInput
+        className="mt-6 px-6 py-2 border rounded"
         value={formData[field]}
         onChangeText={(value) => updateField(field, value)}
         {...options}
       />
       {formErrors[field] && (
-        <Text>{formErrors[field]}</Text>
+        <Text className="w-1/2 py-2 text-red-200">{formErrors[field]}</Text>
       )}
     </View>
   );
 
   return (
-    <View>
+    <View className="flex w-full items-center justify-center">
+
       {authError && (
-        <Text>{authError}</Text>
+        <Text className="w-full py-2 text-red-200">{authError}</Text>
       )}
-      
+
       {renderField('username', 'Username', {
         placeholder: 'Enter your username',
         autoCapitalize: 'none',
       })}
-      
+
       {renderField('name', 'Name', {
         placeholder: 'Enter your full name',
       })}
-      
+
       {renderField('email', 'Email', {
         placeholder: 'Enter your email',
         autoCapitalize: 'none',
         keyboardType: 'email-address',
       })}
-      
+
       {renderField('password', 'Password', {
         placeholder: 'Create a password',
         secureTextEntry: true,
@@ -106,7 +109,8 @@ export default function SignupForm() {
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text>Create Account</Text>
+          <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+            Create Account</Text>
         )}
       </Pressable>
     </View>

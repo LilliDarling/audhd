@@ -9,18 +9,23 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "userInterfaceStyle": "automatic",
+      "supportsTablet": true,
+      "bundleIdentifier": "user.app"
     },
     "android": {
+      "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "user.app"
     },
     "web": {
       "bundler": "metro",
       "output": "single",
       "port": 8082,
+      "userInterfaceStyle": "automatic",
       "build": {
         "babel": {
           "include": [
@@ -40,7 +45,12 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -5,9 +5,9 @@ const config = getDefaultConfig(__dirname, {
   // [Web-only]: Enables CSS support in Metro.
   isCSSEnabled: true,
   resolver: {
-    unstable_enablePackageExports: true,
-    unstable_enableSymlinks: true,
-  }
+    unstable_enablePackageExports: false,
+    unstable_enableSymlinks: false,
+  },
 });
 
 module.exports = withNativeWind(config, { input: "./global.css" });

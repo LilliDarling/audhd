@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/context/AuthContext';
 
 interface FormErrors {
@@ -43,15 +43,14 @@ export default function LoginForm() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center p-4 w-full">
+    <View className="flex w-full items-center justify-center">
       {authError ? (
-        <Text>{authError}</Text>
+        <Text className="w-full py-2 text-red-200">{authError}</Text>
       ) : null}
 
-      <View>
-        <Text className='text-yellow-500 mb-4'>Username</Text>
+      <View className='w-1/2 mb-6'>
         <TextInput
-          className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-600 p-2 rounded-lg"
+          className="px-6 py-2 border rounded"
           placeholder="Enter your username"
           value={username}
           onChangeText={(text) => {
@@ -63,14 +62,13 @@ export default function LoginForm() {
           textContentType="username"
         />
         {formErrors.username ? (
-          <Text>{formErrors.username}</Text>
+          <Text className="w-full py-2 text-red-200">{formErrors.username}</Text>
         ) : null}
       </View>
 
-      <View>
-        <Text className='text-yellow-500 mb-4'>Password</Text>
+      <View className='w-1/2 mb-6'>
         <TextInput
-          className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-600 p-2 rounded-lg"
+          className="px-6 py-2 border rounded"
           placeholder="Enter your password"
           value={password}
           onChangeText={(text) => {
@@ -82,7 +80,7 @@ export default function LoginForm() {
           textContentType="password"
         />
         {formErrors.password ? (
-          <Text>{formErrors.password}</Text>
+          <Text className="w-full py-2 text-red-200">{formErrors.password}</Text>
         ) : null}
       </View>
 
@@ -93,7 +91,8 @@ export default function LoginForm() {
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-lg text-white hover:text-slate-600 mb-4 border-2 bg-rose-500 px-6 py-2 rounded-lg">Sign In</Text>
+          <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+            Sign In</Text>
 
         )}
       </Pressable>

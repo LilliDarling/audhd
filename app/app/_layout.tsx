@@ -1,7 +1,9 @@
-import "../global.css"
-import { Slot, useRouter, useSegments } from 'expo-router';
-import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
+import '../global.css'
 import { useEffect } from 'react';
+import { useColorScheme } from "react-native";
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 
 function RootLayoutNav() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -11,7 +13,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoading) {
       const inAuthGroup = segments[0] === '(auth)';
-      
+
       if (isAuthenticated && inAuthGroup) {
         router.replace('/(tabs)');
       } else if (!isAuthenticated && !inAuthGroup) {
@@ -24,9 +26,13 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <RootLayoutNav />
+      </ThemeProvider>
     </AuthProvider>
   );
 }

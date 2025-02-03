@@ -13,6 +13,7 @@ export interface SignUpRequest {
 export interface UserResponse {
     id: string;
     username: string;
+    token: string;
 }
   
 export interface AuthError {
