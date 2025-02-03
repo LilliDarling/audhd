@@ -9,10 +9,14 @@
 
 
 - https://gluestack.io/
+- https://reactnativepaper.com/
+- https://reactnativeelements.com/
+- https://rn-material.js.org/docs/getting-started
+- https://akveo.github.io/react-native-ui-kitten/
 - https://github.com/Mobilecn-UI/nativecn-ui
 - https://github.com/mrzachnugent/react-native-reusables
 - https://github.com/includeHasan/rn-shadui/tree/main/app
-- https://akveo.github.io/react-native-ui-kitten/docs/guides/getting-started#getting-started
+
 
 
 
