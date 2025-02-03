@@ -48,7 +48,7 @@ export default function LoginForm() {
         <Text className="w-full py-2 text-red-200">{authError}</Text>
       ) : null}
 
-      <View className='w-1/2 mb-6'>
+      <View className='mb-6'>
         <TextInput
           className="px-6 py-2 border rounded"
           placeholder="Enter your username"
@@ -66,7 +66,7 @@ export default function LoginForm() {
         ) : null}
       </View>
 
-      <View className='w-1/2 mb-6'>
+      <View className='mb-6'>
         <TextInput
           className="px-6 py-2 border rounded"
           placeholder="Enter your password"
