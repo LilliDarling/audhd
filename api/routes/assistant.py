@@ -1,5 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from typing import List
 
 from models.users import UserResponse
@@ -27,36 +29,41 @@ async def send_message(
     assistant_queries: ADHDAssistantQueries = Depends(),
     task_queries: TaskQueries = Depends(),
     calendar_queries: CalendarQueries = Depends()
-) -> AssistantResponse:
+) -> JSONResponse:
     if not current_user:
         raise AuthExceptions.unauthorized()
     
     try:
-        # Add request context logging
-        logger.info(f"Processing message for user {current_user.id}")
-        logger.debug(f"Message content: {message_data.message[:50]}...")
-        
         response = await assistant_queries.process_message(
             current_user.id,
             message_data.message,
             task_queries,
             calendar_queries
         )
-        
-        # Add response validation
-        if not response or not response.get('content'):
+
+        if not response or not isinstance(response, dict) or 'content' not in response:
+            logger.error(f"Invalid response format: {response}")
             raise HTTPException(
                 status_code=500,
-                detail="Invalid response from assistant"
+                detail="Invalid response format from assistant"
             )
-            
-        return response
+
+        return JSONResponse(
+            content=jsonable_encoder(response),
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY"
+            }
+        )
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        logger.error(f"Error processing message: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="Failed to process message"
+            detail=f"Failed to process message: {str(e)}"
         )
 
 
@@ -83,8 +90,26 @@ async def get_history(
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     assistant_queries: ADHDAssistantQueries = Depends(),
     limit: int = 10
-) -> List[AssistantMessage]:
+) -> JSONResponse:
     if not current_user:
         raise AuthExceptions.unauthorized()
     
-    return await assistant_queries.get_conversation_history(current_user.id, limit)
+    try:
+        messages = await assistant_queries.get_conversation_history(
+            current_user.id, 
+            limit
+        )
+        
+        return JSONResponse(
+            content=jsonable_encoder(messages),
+            headers={
+                "Cache-Control": "private, max-age=0, must-revalidate",
+                "Pragma": "no-cache"
+            }
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch message history: {str(e)}"
+        )

@@ -19,6 +19,14 @@ from config.database import engine
 logger = logging.getLogger(__name__)
 
 class ADHDAssistantQueries:
+    _instance = None
+    _is_initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(ADHDAssistantQueries, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
       print("Initializing ADHDAssistantQueries")
       self.api_url = "http://ollama:11434/api/generate"
@@ -28,6 +36,7 @@ class ADHDAssistantQueries:
       self._ensure_model()
 
       self.session = requests.Session()
+      self.__class__._is_initialized = True
     
     def _ensure_model(self):
         """Pull the model if not already present"""
@@ -57,10 +66,6 @@ class ADHDAssistantQueries:
                 f"{msg['role'].title()}: {msg['content']}\n" 
                 for msg in (history or [])
             )
-            if history:
-                for msg in history:
-                    role = "Human" if msg["role"] == "user" else "Assistant"
-                    formatted_messages += f"{role}: {msg['content']}\n"
                 
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
@@ -81,7 +86,8 @@ class ADHDAssistantQueries:
                         "mirostat": 2,  # Better response quality/speed tradeoff
                         "top_k": 40,
                         "top_p": 0.9,
-                        "repeat_last_n": 64  # Reduce repetition checking
+                        "repeat_last_n": 64,  # Reduce repetition checking
+                        "num_gpu": 1  # Use GPU if available
                     }
                 }
             )
@@ -89,10 +95,6 @@ class ADHDAssistantQueries:
             
             if response.status_code == 200:
                 data = response.json()
-                if "error" in data:
-                    print(f"Error in response: {data['error']}")
-                    return None
-                
                 result = data.get('response')
                 if result:
                     self.message_cache[cache_key] = result
@@ -156,8 +158,7 @@ class ADHDAssistantQueries:
         if not tasks:
             return base_prompt
 
-        if tasks:
-            task_context = "\nTasks:" + "".join(
+        task_context = "\nTasks:" + "".join(
             f"\n- {task.title} (P:{task.priority}, S:{task.status})"
             for task in tasks
         )
@@ -202,11 +203,13 @@ class ADHDAssistantQueries:
         try:
             message_future = self.save_message(user_id, content, "user")
             tasks_future = task_queries.get_tasks(user_id)
+            history_future = self.get_conversation_history(user_id, limit=5)
 
-            message, tasks = await asyncio.gather(message_future, tasks_future)
-
-            # has_calendar = False
-            history = await self.get_conversation_history(user_id, limit=5)
+            message, tasks, history = await asyncio.gather(
+                message_future, 
+                tasks_future,
+                history_future
+            )
 
             print(f"Found {len(tasks)} tasks")
             print(f"History length: {len(history)}")
@@ -229,11 +232,8 @@ class ADHDAssistantQueries:
             )
             
             suggestions = self._extract_adhd_suggestions(assistant_message)
-            # result = AssistantResponse.from_mongo(saved_message, suggestions)
-            # print("Successfully processed message")
-            
-            # return result
             return self._create_response(saved_message, suggestions)
+        
         except Exception as e:
             print(f"Error in process_message: {str(e)}")
             print(f"Error type: {type(e)}")
