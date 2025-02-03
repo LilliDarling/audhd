@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*", "dist/*"]
+    },
+    // Required in Vue projects
+    "jsx": "preserve",
+    // Required in Vite
+    "isolatedModules": true,
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["vite/client", "node"],
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["**/*.ts", "**/*.vue"]
+}
