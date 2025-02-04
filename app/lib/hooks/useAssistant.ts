@@ -1,14 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { assistantApi, AssistantMessage, AssistantResponse } from '@/lib/api/assistant';
+import { AssistantMessage, AssistantResponse, PendingRequest } from '@/types/assistant';
 import axios, { CancelTokenSource } from 'axios';
 import { useAuth } from '../context/AuthContext';
-import _ from 'lodash';
-
-
-interface PendingRequest {
-  content: string;
-  abortController: AbortController;
-}
+import { assistantApi } from '../api/assistant';
 
 
 export function useAssistant() {
@@ -31,93 +25,40 @@ export function useAssistant() {
     }
   }, []);
 
-  const debouncedSendMessage = useCallback(
-    _.debounce(async (content: string): Promise<AssistantResponse> => {
-      if (!isAuthenticated || !user) {
-        throw new Error('Please log in to use the assistant.');
-      }
-
-      // Cancel any existing request
-      cancelPendingRequest();
-
-      // Create new abort controller and cancel token
-      const abortController = new AbortController();
-      const cancelTokenSource = axios.CancelToken.source();
-      
-      pendingRequestRef.current = { content, abortController };
-      cancelTokenSourceRef.current = cancelTokenSource;
-
-      try {
-        const response = await axios.post<AssistantResponse>(
-          '/api/assistant/message', 
-          { message: content },
-          {
-            withCredentials: true,
-            timeout: 45000, // Increased timeout
-            signal: abortController.signal,
-            cancelToken: cancelTokenSource.token,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            validateStatus: (status) => status === 200,
-          }
-        );
-
-        if (!response.data?.content) {
-          throw new Error('Invalid response from assistant');
-        }
-
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          if (error.response?.status === 401) {
-            throw new Error('Please log in to use the assistant.');
-          }
-          if (error.response?.status === 504) {
-            throw new Error('Request timed out. Please try again.');
-          }
-          throw new Error(error.response?.data?.detail || 'Failed to send message');
-        }
-        throw error;
-      }
-    }, 300),
-    [isAuthenticated, user, cancelPendingRequest]
-  );
-
   const loadHistory = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
       setIsLoading(true);
-      setError(null);
       const history = await assistantApi.getHistory();
       setMessages(history);
-    } catch (err) {
+    } catch (error) {
       setError('Failed to load message history');
-      console.error(err);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
 
   const sendMessage = async (content: string): Promise<AssistantResponse> => {
+    if (!isAuthenticated || !user) {
+      throw new Error('Please log in to use the assistant.');
+    }
+
     setIsLoading(true);
     setError(null);
     
     try {
-      // Add user message immediately
       const userMessage: AssistantMessage = {
-        user_id: user?.id ?? '',
+        user_id: user.id,
         content,
         timestamp: new Date().toISOString(),
         type: 'user'
       };
       setMessages(prev => [...prev, userMessage]);
 
-      // Send message and wait for response
-      const response = await debouncedSendMessage(content);
+      const response = await assistantApi.sendMessage(content);
       
-      // Add assistant message
       const assistantMessage: AssistantMessage = {
         user_id: 'assistant',
         content: response.content,
@@ -127,10 +68,10 @@ export function useAssistant() {
       setMessages(prev => [...prev, assistantMessage]);
 
       return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       setError(errorMessage);
-      throw err;
+      throw error;
     } finally {
       setIsLoading(false);
     }

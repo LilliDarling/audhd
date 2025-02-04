@@ -1,10 +1,11 @@
-import asyncio
-import json
-import re
 import os
+os.environ["TRANSFORMERS_CACHE"] = "/root/.cache/huggingface/transformers"
+
+import asyncio
+import torch
+import json
 import logging
-import traceback
-import requests
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from openai import OpenAI  # Keep for voice transcription
@@ -28,85 +29,68 @@ class ADHDAssistantQueries:
         return cls._instance
     
     def __init__(self):
-      print("Initializing ADHDAssistantQueries")
-      self.api_url = "http://ollama:11434/api/generate"
-      self.model = "llama2"  # Base model is better for testing
-      self.message_cache = {}
-      print("Starting model pull...")
-      self._ensure_model()
-
-      self.session = requests.Session()
-      self.__class__._is_initialized = True
+        if self._is_initialized:
+            return
+            
+        logger.info("Initializing ADHDAssistant")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_name = "openlm-research/open_llama_3b_v2"
+        self.message_cache = {}
+        self._load_model()
+        self.__class__._is_initialized = True
     
-    def _ensure_model(self):
-        """Pull the model if not already present"""
+    def _load_model(self):
         try:
-            response = requests.post(
-                "http://ollama:11434/api/pull",
-                json={
-                    "name": self.model,
-                    "stream": False
-                }
-            )
-            if response.status_code == 200:
-                print(f"Model {self.model} ready")
-            else:
-                print(f"Error pulling model: {response.status_code}")
-                print(f"Response: {response.text}")
+            logger.info(f"Loading model {self.model_name} on {self.device}")
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch.float32,
+            ).to(self.device)
+
+            logger.info("Model loaded successfully")
         except Exception as e:
-            print(f"Exception during model pull: {e}")
+            logger.error(f"Error loading model: {str(e)}")
+            raise
 
     async def _get_model_response(self, prompt: str, history: List[Dict[str, str]] = None) -> Optional[str]:
         cache_key = f"{prompt}_{json.dumps(history) if history else ''}"
         if cache_key in self.message_cache:
             return self.message_cache[cache_key]
-      
+
         try:
             formatted_messages = ''.join(
                 f"{msg['role'].title()}: {msg['content']}\n" 
                 for msg in (history or [])
             )
-                
+            
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
-            print(f"Sending request to Ollama with prompt length: {len(full_prompt)}")
-            response = await asyncio.to_thread(
-                self.session.post,
-                self.api_url,
-                json={
-                    "model": self.model,
-                    "prompt": full_prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 1000,
-                        "stop": ["Human:", "Assistant:"],
-                        "num_ctx": 2048,  # Optimize context window
-                        "num_thread": 4,  # Use multiple threads
-                        "mirostat": 2,  # Better response quality/speed tradeoff
-                        "top_k": 40,
-                        "top_p": 0.9,
-                        "repeat_last_n": 64,  # Reduce repetition checking
-                        "num_gpu": 1  # Use GPU if available
-                    }
-                }
-            )
-            print(f"Got response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                result = data.get('response')
-                if result:
-                    self.message_cache[cache_key] = result
-                    return result
+            inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-            else:
-                print(f"Error from Ollama API: {response.text}")
-                return None
-                
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=2000,
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    top_p=0.9,
+                    do_sample=True,
+                    repetition_penalty=1.2,
+                    pad_token_id=self.tokenizer.pad_token_id
+                )
+
+            result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            self.message_cache[cache_key] = result
+            return result
+
         except Exception as e:
-            print(f"Error getting model response: {str(e)}")
-            print(f"Full traceback: {traceback.format_exc()}")
+            logger.error(f"Error getting model response: {str(e)}")
             return None
         
     def _create_system_prompt(self, tasks: List[Task], has_calendar: bool) -> str:
@@ -233,12 +217,10 @@ class ADHDAssistantQueries:
             
             suggestions = self._extract_adhd_suggestions(assistant_message)
             return self._create_response(saved_message, suggestions)
-        
+    
         except Exception as e:
             print(f"Error in process_message: {str(e)}")
             print(f"Error type: {type(e)}")
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
             raise
 
     def _extract_adhd_suggestions(self, response: str) -> Dict[str, Any]:
@@ -262,97 +244,97 @@ class ADHDAssistantQueries:
         current_section = None
         task_breakdown_data = {}
         
-        for line in sections:
-            line = line.strip()
-            if not line:
-                continue
+        # for line in sections:
+        #     line = line.strip()
+        #     if not line:
+        #         continue
                 
-            # Check for section markers
-            if line.startswith('BREAKDOWN:'):
-                current_section = 'breakdown'
-                task_breakdown_data = {
-                    'main_task': line.replace('BREAKDOWN:', '').strip(),
-                    'subtasks': [],
-                    'estimated_time': 30,  # Default
-                    'difficulty_level': 2,  # Default
-                    'energy_level_needed': 2,  # Default
-                    'context_switches': 1,  # Default
-                    'initiation_tips': [],
-                    'dopamine_hooks': [],
-                    'break_points': []
-                }
-            elif line.startswith('QUICK_WIN:'):
-                current_section = 'quick_win'
-                suggestions['dopamine_boosters'].append(line.replace('QUICK_WIN:', '').strip())
-            elif line.startswith('TIME_TIP:'):
-                current_section = 'time'
-                suggestions['calendar_events'].append({
-                    'tip': line.replace('TIME_TIP:', '').strip(),
-                    'type': 'time_management'
-                })
-            elif line.startswith('FOCUS:'):
-                current_section = 'focus'
-                suggestions['focus_tips'].append(line.replace('FOCUS:', '').strip())
-            elif line.startswith('EF_SUPPORT:'):
-                current_section = 'ef_support'
-                ef_tip = line.replace('EF_SUPPORT:', '').strip()
-                suggestions['ef_supports'].append({
-                    'strategy': ef_tip,
-                    'category': self._categorize_ef_support(ef_tip)
-                })
-            elif line.startswith('ENVIRONMENT:'):
-                current_section = 'environment'
-                suggestions['environment_tips'].append(line.replace('ENVIRONMENT:', '').strip())
-            elif line.startswith('START_NOW:'):
-                current_section = 'tasks'
-                suggestions['tasks'].append(line.replace('START_NOW:', '').strip())
-            else:
-                # Process content based on current section
-                if current_section == 'breakdown':
-                    if line.startswith('- Time:'):
-                        try:
-                            task_breakdown_data['estimated_time'] = int(
-                                line.replace('- Time:', '').strip().split()[0]
-                            )
-                        except ValueError:
-                            pass
-                    elif line.startswith('- Difficulty:'):
-                        try:
-                            task_breakdown_data['difficulty_level'] = int(
-                                line.replace('- Difficulty:', '').strip().split('/')[0]
-                            )
-                        except ValueError:
-                            pass
-                    elif line.startswith('- Energy:'):
-                        try:
-                            task_breakdown_data['energy_level_needed'] = int(
-                                line.replace('- Energy:', '').strip().split('/')[0]
-                            )
-                        except ValueError:
-                            pass
-                    elif line.startswith('- Steps:') or line.startswith('- Subtasks:'):
-                        current_section = 'breakdown_steps'
-                    elif line.startswith('- Break at:'):
-                        try:
-                            break_points = line.replace('- Break at:', '').strip()
-                            task_breakdown_data['break_points'] = [
-                                int(x.strip()) for x in break_points.split(',')
-                            ]
-                        except ValueError:
-                            pass
-                    elif line.startswith('- Tips:'):
-                        current_section = 'breakdown_tips'
-                    elif line.startswith('- Dopamine hooks:'):
-                        current_section = 'breakdown_hooks'
-                elif current_section == 'breakdown_steps':
-                    if line.startswith('-'):
-                        task_breakdown_data['subtasks'].append(line.replace('-', '').strip())
-                elif current_section == 'breakdown_tips':
-                    if line.startswith('-'):
-                        task_breakdown_data['initiation_tips'].append(line.replace('-', '').strip())
-                elif current_section == 'breakdown_hooks':
-                    if line.startswith('-'):
-                        task_breakdown_data['dopamine_hooks'].append(line.replace('-', '').strip())
+        #     # Check for section markers
+        #     if line.startswith('BREAKDOWN:'):
+        #         current_section = 'breakdown'
+        #         task_breakdown_data = {
+        #             'main_task': line.replace('BREAKDOWN:', '').strip(),
+        #             'subtasks': [],
+        #             'estimated_time': 30,  # Default
+        #             'difficulty_level': 2,  # Default
+        #             'energy_level_needed': 2,  # Default
+        #             'context_switches': 1,  # Default
+        #             'initiation_tips': [],
+        #             'dopamine_hooks': [],
+        #             'break_points': []
+        #         }
+        #     elif line.startswith('QUICK_WIN:'):
+        #         current_section = 'quick_win'
+        #         suggestions['dopamine_boosters'].append(line.replace('QUICK_WIN:', '').strip())
+        #     elif line.startswith('TIME_TIP:'):
+        #         current_section = 'time'
+        #         suggestions['calendar_events'].append({
+        #             'tip': line.replace('TIME_TIP:', '').strip(),
+        #             'type': 'time_management'
+        #         })
+        #     elif line.startswith('FOCUS:'):
+        #         current_section = 'focus'
+        #         suggestions['focus_tips'].append(line.replace('FOCUS:', '').strip())
+        #     elif line.startswith('EF_SUPPORT:'):
+        #         current_section = 'ef_support'
+        #         ef_tip = line.replace('EF_SUPPORT:', '').strip()
+        #         suggestions['ef_supports'].append({
+        #             'strategy': ef_tip,
+        #             'category': self._categorize_ef_support(ef_tip)
+        #         })
+        #     elif line.startswith('ENVIRONMENT:'):
+        #         current_section = 'environment'
+        #         suggestions['environment_tips'].append(line.replace('ENVIRONMENT:', '').strip())
+        #     elif line.startswith('START_NOW:'):
+        #         current_section = 'tasks'
+        #         suggestions['tasks'].append(line.replace('START_NOW:', '').strip())
+        #     else:
+        #         # Process content based on current section
+        #         if current_section == 'breakdown':
+        #             if line.startswith('- Time:'):
+        #                 try:
+        #                     task_breakdown_data['estimated_time'] = int(
+        #                         line.replace('- Time:', '').strip().split()[0]
+        #                     )
+        #                 except ValueError:
+        #                     pass
+        #             elif line.startswith('- Difficulty:'):
+        #                 try:
+        #                     task_breakdown_data['difficulty_level'] = int(
+        #                         line.replace('- Difficulty:', '').strip().split('/')[0]
+        #                     )
+        #                 except ValueError:
+        #                     pass
+        #             elif line.startswith('- Energy:'):
+        #                 try:
+        #                     task_breakdown_data['energy_level_needed'] = int(
+        #                         line.replace('- Energy:', '').strip().split('/')[0]
+        #                     )
+        #                 except ValueError:
+        #                     pass
+        #             elif line.startswith('- Steps:') or line.startswith('- Subtasks:'):
+        #                 current_section = 'breakdown_steps'
+        #             elif line.startswith('- Break at:'):
+        #                 try:
+        #                     break_points = line.replace('- Break at:', '').strip()
+        #                     task_breakdown_data['break_points'] = [
+        #                         int(x.strip()) for x in break_points.split(',')
+        #                     ]
+        #                 except ValueError:
+        #                     pass
+        #             elif line.startswith('- Tips:'):
+        #                 current_section = 'breakdown_tips'
+        #             elif line.startswith('- Dopamine hooks:'):
+        #                 current_section = 'breakdown_hooks'
+        #         elif current_section == 'breakdown_steps':
+        #             if line.startswith('-'):
+        #                 task_breakdown_data['subtasks'].append(line.replace('-', '').strip())
+        #         elif current_section == 'breakdown_tips':
+        #             if line.startswith('-'):
+        #                 task_breakdown_data['initiation_tips'].append(line.replace('-', '').strip())
+        #         elif current_section == 'breakdown_hooks':
+        #             if line.startswith('-'):
+        #                 task_breakdown_data['dopamine_hooks'].append(line.replace('-', '').strip())
 
         # Only add task breakdown if we have subtasks
         if task_breakdown_data.get('subtasks'):
@@ -403,18 +385,14 @@ class ADHDAssistantQueries:
             calendar_queries
         )
 
-    def _create_chat_messages(
-        self, 
-        system_prompt: str, 
-        history: List[AssistantMessage]
-    ) -> List[Dict[str, str]]:
-        return [
-            {
+    def _create_chat_messages(self, system_prompt: str, history: List[AssistantMessage]) -> List[Dict[str, str]]:
+        messages = [{"role": "system", "content": system_prompt}]
+        for msg in history:
+            messages.append({
                 "role": "user" if msg.type == "user" else "assistant",
                 "content": msg.content
-            }
-            for msg in history
-        ]
+            })
+        return messages
     
     def _create_response(self, message: Any, suggestions: Dict[str, Any]) -> Any:
         """

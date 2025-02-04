@@ -14,16 +14,19 @@ services:
   #   depends_on:
   #     - api
 
-  ollama:
-    image: ollama/ollama:latest
+  api:
+    env_file: 
+      - ./.env/api.env
+    build: ./api
     ports:
-      - "11434:11434"
+      - "8000:8000"
+    depends_on:
+      - mongodb
     volumes:
-      - ~/.ollama:/root/.ollama
+      - ./api:/api
+      - model_cache:/root/.cache/huggingface/transformers
     environment:
-      - OLLAMA_HOST=0.0.0.0:11434
-    networks:
-      - app-network
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface/transformers
     deploy:
       resources:
         reservations:
@@ -31,19 +34,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-  api:
-    env_file: 
-      - ./.env/api.env
-    build: ./api
-    environment: 
-      - OLLAMA_HOST=http://ollama:11434
-    ports:
-      - "8000:8000"
-    depends_on:
-      - mongodb
-      - ollama
-    volumes:
-      - ./api:/api
     networks:
       - app-network
 
@@ -88,7 +78,7 @@ services:
 
 volumes:
   audhd:
-  ollama:
+  model_cache:
 
 networks:
   app-network:

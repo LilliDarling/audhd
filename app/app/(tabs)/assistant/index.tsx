@@ -15,20 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAssistant } from '@/lib/hooks/useAssistant';
 import MessageBubble from '@/lib/components/assistant/MessageBubble';
 import VoiceRecorder from '@/lib/components/assistant/VoiceRecorder';
-import { AssistantMessage, TaskBreakdown } from '@/lib/api/assistant';
+import { AssistantMessage, AssistantResponse, TaskBreakdown } from '@/types/assistant';
 import axios from 'axios';
 import { useAuth } from '@/lib/context/AuthContext';
 
-interface AssistantResponse {
-  content: string;
-  task_breakdown?: TaskBreakdown;
-  suggested_tasks?: string[];
-  calendar_suggestions?: any[];
-  dopamine_boosters?: string[];
-  focus_tips?: string[];
-  executive_function_supports?: any[];
-  environment_adjustments?: string[];
-}
 
 export default function AssistantScreen() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
@@ -62,7 +52,7 @@ export default function AssistantScreen() {
     try {
       console.log('Starting message send...');
       const response = await axios.post(
-        'http://localhost:8000/api/assistant/message',  // Use full URL
+        'http://localhost:8000/api/assistant/message',
         { message: currentMessage },
         {
           headers: {

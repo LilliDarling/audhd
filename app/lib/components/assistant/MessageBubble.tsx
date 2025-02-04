@@ -1,13 +1,19 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
-import { AssistantMessage, AssistantResponse } from '@/lib/api/assistant';
+import { MessageBubbleProps } from '@/types/assistant';
 import TaskBreakdown from './TaskBreakdown';
 
-interface MessageBubbleProps {
-  message: AssistantMessage;
-  suggestions?: AssistantResponse;
-  isLoading?: boolean;
-}
+const getCategoryIcon = (category: string): string => {
+  switch (category) {
+    case 'task_initiation': return '🚀';
+    case 'organization': return '📋';
+    case 'planning': return '📅';
+    case 'attention': return '🎯';
+    case 'emotional_regulation': return '🧠';
+    case 'working_memory': return '💭';
+    default: return '💡';
+  }
+};
 
 export default function MessageBubble({ message, suggestions, isLoading }: MessageBubbleProps) {
   const isUser = message.type === 'user';
@@ -77,23 +83,20 @@ export default function MessageBubble({ message, suggestions, isLoading }: Messa
         
         {!isUser && suggestions && (
           <>
+            {renderSuggestionSection('Focus Tips:', suggestions.focus_tips || [], '🎯')}
+            {renderSuggestionSection('Quick Wins:', suggestions.dopamine_boosters || [], '⚡️')}
             {renderSuggestionSection(
-              'Focus Tips:',
-              suggestions.focus_tips || [],
-              '•'
-            )}
-            
-            {renderSuggestionSection(
-              'Quick Wins:',
-              suggestions.dopamine_boosters || [],
-              '🎯'
-            )}
-            
-            {renderSuggestionSection(
-              'Executive Function Support:',
+              'EF Support:',
               suggestions.executive_function_supports || [],
               '',
-              (support) => `${support.category === 'task_initiation' ? '🚀' : '💡'} ${support.strategy}`
+              (support) => `${getCategoryIcon(support.category)} ${support.strategy}`
+            )}
+            {renderSuggestionSection('Environment:', suggestions.environment_adjustments || [], '🏠')}
+            {renderSuggestionSection(
+              'Calendar:',
+              suggestions.calendar_suggestions || [],
+              '📅',
+              (suggestion) => suggestion.tip
             )}
           </>
         )}

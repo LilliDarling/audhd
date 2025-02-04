@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import logging
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 @router.post("/message", response_model=AssistantResponse)
 async def send_message(
-    request: Request,
     message_data: MessageRequest,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     assistant_queries: ADHDAssistantQueries = Depends(),
@@ -43,10 +43,7 @@ async def send_message(
 
         if not response or not isinstance(response, dict) or 'content' not in response:
             logger.error(f"Invalid response format: {response}")
-            raise HTTPException(
-                status_code=500,
-                detail="Invalid response format from assistant"
-            )
+            raise HTTPException(status_code=500, detail="Invalid response format from assistant")
 
         return JSONResponse(
             content=jsonable_encoder(response),
@@ -61,10 +58,8 @@ async def send_message(
     except HTTPException as he:
         raise he
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to process message: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
+
 
 
 @router.post("/voice")
@@ -85,31 +80,49 @@ async def send_voice(
         calendar_queries
     )
 
-@router.get("/history")
-async def get_history(
+@router.get("/history", response_model=List[AssistantMessage])
+async def get_message_history(
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     assistant_queries: ADHDAssistantQueries = Depends(),
     limit: int = 10
-) -> JSONResponse:
+):
     if not current_user:
         raise AuthExceptions.unauthorized()
     
     try:
         messages = await assistant_queries.get_conversation_history(
-            current_user.id, 
-            limit
+            user_id=current_user.id,
+            limit=limit
         )
-        
-        return JSONResponse(
-            content=jsonable_encoder(messages),
-            headers={
-                "Cache-Control": "private, max-age=0, must-revalidate",
-                "Pragma": "no-cache"
-            }
-        )
-        
+        return messages
+
     except Exception as e:
+        logger.error(f"Failed to fetch message history: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch message history: {str(e)}"
+            status_code=500, 
+            detail=str(e)
         )
+
+@router.get("/health")
+async def check_health(
+    assistant_queries: ADHDAssistantQueries = Depends()
+):
+    try:
+        initialized = assistant_queries._is_initialized
+        device = assistant_queries.device if initialized else None
+        model_name = assistant_queries.model_name if initialized else None
+        
+        return {
+            "status": "ready" if initialized else "initializing",
+            "initialized": initialized,
+            "device": device,
+            "model": model_name,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
