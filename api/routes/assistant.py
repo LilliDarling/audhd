@@ -114,32 +114,53 @@ async def check_health(
     assistant_queries: ADHDAssistantQueries = Depends(get_assistant_queries)
 ):
     try:
-        # Test if model is actually responsive
-        test_input = "Hello"
-        inputs = assistant_queries._tokenizer(test_input, return_tensors="pt", padding=True)
-        inputs = {k: v.to(assistant_queries.device) for k, v in inputs.items()}
-        
-        with torch.no_grad():
-            outputs = assistant_queries._model.generate(
-                **inputs,
-                max_length=10,
-                num_return_sequences=1,
-            )
-        
-        test_output = assistant_queries._tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        return {
-            "status": "healthy",
-            "initialized": assistant_queries._is_initialized,
-            "device": assistant_queries.device,
-            "model": assistant_queries.model_name,
-            "test_output": test_output,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+        # Check if initialization is in progress
+        if assistant_queries._initialization_lock.locked():
+            return {
+                "status": "initializing",
+                "device": assistant_queries.device,
+                "model": assistant_queries.model_name,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+        if not assistant_queries._is_initialized:
+            await assistant_queries.initialize()
+
+        # Only test the model if it's fully initialized
+        if assistant_queries._is_initialized and assistant_queries.model and assistant_queries.tokenizer:
+            test_input = "Hello"
+            inputs = assistant_queries.tokenizer(test_input, return_tensors="pt", padding=True)
+            inputs = {k: v.to(assistant_queries.device) for k, v in inputs.items()}
+            
+            with torch.no_grad():
+                outputs = assistant_queries.model.generate(
+                    **inputs,
+                    max_length=10,
+                    num_return_sequences=1,
+                )
+            
+            test_output = assistant_queries.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            return {
+                "status": "healthy",
+                "initialized": True,
+                "device": assistant_queries.device,
+                "model": assistant_queries.model_name,
+                "test_output": test_output,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "initializing",
+                "initialized": False,
+                "device": assistant_queries.device,
+                "model": assistant_queries.model_name,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
-            "status": "unhealthy",
+            "status": "error",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }

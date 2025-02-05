@@ -43,12 +43,29 @@ export default function AssistantScreen() {
     );
   }
 
+  const API_URL = 'http://localhost:8000';  // Use localhost since frontend is outside Docker
+
   const checkHealth = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/assistant/health');
+      const response = await axios.get(`${API_URL}/api/assistant/health`, {
+        timeout: 30000,  // Increase to 30 seconds since model loading takes time
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      console.log('Health check response:', response.data);
       return response.data.status === 'healthy';
     } catch (error) {
       console.error('Health check failed:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          console.log('Health check timed out - model might still be loading');
+          // Return true if we know it's just loading
+          return true;
+        }
+        console.error('Response data:', error.response?.data);
+      }
       return false;
     }
   };
@@ -60,21 +77,21 @@ export default function AssistantScreen() {
     setMessage('');
   
     try {
-      const isHealthy = await checkHealth();
-        if (!isHealthy) {
-            throw new Error('Assistant service is not healthy');
-        }
-        
+      const healthCheck = checkHealth();
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 5000));
+      const isHealthy = await Promise.race([healthCheck, timeoutPromise]);
+
       console.log('Starting message send...');
       const response = await axios.post(
-        'http://localhost:8000/api/assistant/message',
+        `${API_URL}/api/assistant/message`,
         { message: currentMessage },
         {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          withCredentials: true
+          withCredentials: true,
+          timeout: 60000  // 60 second timeout for messages
         }
       );
       

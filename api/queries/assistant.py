@@ -1,5 +1,5 @@
 import os
-os.environ["TRANSFORMERS_CACHE"] = "/root/.cache/huggingface/transformers"
+os.environ["HF_HOME"] = "/root/.cache/huggingface/transformers"
 
 import asyncio
 import torch
@@ -22,75 +22,121 @@ logger = logging.getLogger(__name__)
 class ADHDAssistantQueries:
     _instance = None
     _is_initialized = False
+    _initialization_lock = asyncio.Lock()
+    model = None
+    tokenizer = None
+    device = None
+    model_name = None
+    message_cache = {}
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(ADHDAssistantQueries, cls).__new__(cls)
+            # Class level initialization
+            cls.device = "cuda" if torch.cuda.is_available() else "cpu"
+            cls.model_name = "openlm-research/open_llama_3b_v2"
         return cls._instance
     
+    # def __init__(self):
+    #     logger.info("Initializing ADHDAssistant")
+    #     if not hasattr(self, 'device'):
+    #         import gc
+    #         gc.collect()
+    #         torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+    #         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    #         self.model_name = "openlm-research/open_llama_3b_v2"
+    #         self.message_cache = {}
+    #         self.tokenizer = None
+
     def __init__(self):
-        logger.info("Initializing ADHDAssistant")
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model_name = "openlm-research/open_llama_3b_v2"
-        self.message_cache = {}
-        self._load_model()
-        self.__class__._is_initialized = True
+        pass
     
-    async def ensure_initialized(self):
+    def __del__(self):
+        if hasattr(self, 'model'):
+            del self.model
+        if hasattr(self, 'tokenizer'):
+            del self.tokenizer
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    
+    async def initialize(self):
         """Ensure the model is initialized before use"""
-        if self._is_initialized:
+        if self.__class__._is_initialized:
             return
 
         async with self._initialization_lock:
             # Double check in case another request initialized while waiting
-            if self._is_initialized:
+            if self.__class__._is_initialized:
                 return
                 
             try:
-                logger.info("Initializing ADHDAssistant")
                 await self._load_model()
-                self._is_initialized = True
-                logger.info("ADHDAssistant initialized successfully")
+                self.__class__._is_initialized = True
+                logger.info("Model initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize ADHDAssistant: {e}")
-                self._is_initialized = False
+                self.__class__._is_initialized = False
                 raise
-    
-    def _load_model(self):
-        try:
-            hf_token = os.getenv('HF_TOKEN')
-            if not hf_token:
-                raise ValueError("HF_TOKEN environment variable not set")
 
+    
+    async def _load_model(self):
+        try:
+            logger.info(f"Loading model {self.model_name} on {self.device}")
+            cache_dir = "/root/.cache/huggingface/transformers"
             offload_folder = "/tmp/model_offload"
             os.makedirs(offload_folder, exist_ok=True)
 
-            logger.info(f"Loading model {self.model_name} on {self.device}")
-
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    self.model_name,
+                torch.set_num_threads(4)
+
+                self.__class__.tokenizer = AutoTokenizer.from_pretrained(
+                    self.__class__.model_name,
+                    token=os.getenv('HF_TOKEN'),
+                    cache_dir=cache_dir,
                     local_files_only=False,
                     use_fast=True,
-                    token=hf_token,
                 )
 
                 if self.tokenizer.pad_token is None:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
+                
+                # device_map = {
+                #     'model.embed_tokens': 'disk',
+                #     'model.norm': 'cpu',
+                #     'lm_head': 'cpu'
+                # }
+                
+                # # Map all other layers to disk
+                # n_layers = 32  # Number of layers in LLaMA 3B
+                # for i in range(n_layers):
+                #     device_map[f'model.layers.{i}'] = 'disk'
 
-                # Load model with proper device mapping
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    token=hf_token,
+                self.__class__.model = AutoModelForCausalLM.from_pretrained(
+                    self.__class__.model_name,
+                    token=os.getenv('HF_TOKEN'),
+                    cache_dir=cache_dir,
                     local_files_only=False,
                     torch_dtype=torch.float32,
-                    device_map="auto",  # This handles device placement automatically
+                    device_map='cpu',
+                    max_memory={'cpu': '4GB'},
                     offload_folder=offload_folder,
                     low_cpu_mem_usage=True,
-                    offload_state_dict=True
-                )  # Remove the .to(self.device) since device_map handles this
+                )
 
                 logger.info("Model loaded successfully")
+
+                test_input = "Hello"
+                inputs = self.tokenizer(test_input, return_tensors="pt")
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+                with torch.no_grad():
+                    output = self.model.generate(**inputs, max_length=10)
+                    logger.info(f"Test output: {self.tokenizer.decode(output[0])}")
+                
+                logger.info("Model test successful")
+
             except Exception as e:
                 logger.error(f"Tokenizer/Model loading error: {str(e)}")
                 raise
@@ -112,6 +158,7 @@ class ADHDAssistantQueries:
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
             inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -220,11 +267,11 @@ class ADHDAssistantQueries:
         task_queries: TaskQueries,
         calendar_queries: CalendarQueries
     ) -> AssistantResponse:
-        if not self._is_initialized:
+        if not self._is_initialized or not self.model or not self.tokenizer:
             await self.initialize()
     
-        if not self._model or not self._tokenizer:
-            raise RuntimeError("Model not properly initialized")
+        # if not self.model or not self.tokenizer:
+        #     raise RuntimeError("Model not properly initialized")
 
         print(f"=== Processing message in ADHDAssistantQueries ===")
         print(f"User ID: {user_id}")
@@ -301,10 +348,10 @@ class ADHDAssistantQueries:
                 task_breakdown_data = {
                     'main_task': line.replace('BREAKDOWN:', '').strip(),
                     'subtasks': [],
-                    'estimated_time': 30,  # Default
-                    'difficulty_level': 2,  # Default
-                    'energy_level_needed': 2,  # Default
-                    'context_switches': 1,  # Default
+                    'estimated_time': 30,
+                    'difficulty_level': 2,
+                    'energy_level_needed': 2,
+                    'context_switches': 1,
                     'initiation_tips': [],
                     'dopamine_hooks': [],
                     'break_points': []
