@@ -43,6 +43,16 @@ export default function AssistantScreen() {
     );
   }
 
+  const checkHealth = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/assistant/health');
+      return response.data.status === 'healthy';
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return false;
+    }
+  };
+
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
     
@@ -50,6 +60,11 @@ export default function AssistantScreen() {
     setMessage('');
   
     try {
+      const isHealthy = await checkHealth();
+        if (!isHealthy) {
+            throw new Error('Assistant service is not healthy');
+        }
+        
       console.log('Starting message send...');
       const response = await axios.post(
         'http://localhost:8000/api/assistant/message',

@@ -17,6 +17,7 @@ WORKDIR /api
 COPY pyproject.toml poetry.lock* ./
 
 RUN poetry install --no-interaction --no-root
+RUN pip install safetensors
 
 COPY . .
 

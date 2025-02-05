@@ -25,17 +25,20 @@ services:
     volumes:
       - ./api:/api
       - model_cache:/root/.cache/huggingface/transformers
+      - model_offload:/tmp/model_offload
     environment:
       - TRANSFORMERS_CACHE=/root/.cache/huggingface/transformers
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     networks:
       - app-network
+    dns:
+      - 8.8.8.8
 
   mongodb:
     image: mongo
@@ -79,6 +82,7 @@ services:
 volumes:
   audhd:
   model_cache:
+  model_offload:
 
 networks:
   app-network:

@@ -29,9 +29,6 @@ class ADHDAssistantQueries:
         return cls._instance
     
     def __init__(self):
-        if self._is_initialized:
-            return
-            
         logger.info("Initializing ADHDAssistant")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_name = "openlm-research/open_llama_3b_v2"
@@ -39,20 +36,64 @@ class ADHDAssistantQueries:
         self._load_model()
         self.__class__._is_initialized = True
     
+    async def ensure_initialized(self):
+        """Ensure the model is initialized before use"""
+        if self._is_initialized:
+            return
+
+        async with self._initialization_lock:
+            # Double check in case another request initialized while waiting
+            if self._is_initialized:
+                return
+                
+            try:
+                logger.info("Initializing ADHDAssistant")
+                await self._load_model()
+                self._is_initialized = True
+                logger.info("ADHDAssistant initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize ADHDAssistant: {e}")
+                self._is_initialized = False
+                raise
+    
     def _load_model(self):
         try:
+            hf_token = os.getenv('HF_TOKEN')
+            if not hf_token:
+                raise ValueError("HF_TOKEN environment variable not set")
+
+            offload_folder = "/tmp/model_offload"
+            os.makedirs(offload_folder, exist_ok=True)
+
             logger.info(f"Loading model {self.model_name} on {self.device}")
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
-            if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = self.tokenizer.eos_token
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_name,
+                    local_files_only=False,
+                    use_fast=True,
+                    token=hf_token,
+                )
 
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=torch.float32,
-            ).to(self.device)
+                if self.tokenizer.pad_token is None:
+                    self.tokenizer.pad_token = self.tokenizer.eos_token
 
-            logger.info("Model loaded successfully")
+                # Load model with proper device mapping
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    token=hf_token,
+                    local_files_only=False,
+                    torch_dtype=torch.float32,
+                    device_map="auto",  # This handles device placement automatically
+                    offload_folder=offload_folder,
+                    low_cpu_mem_usage=True,
+                    offload_state_dict=True
+                )  # Remove the .to(self.device) since device_map handles this
+
+                logger.info("Model loaded successfully")
+            except Exception as e:
+                logger.error(f"Tokenizer/Model loading error: {str(e)}")
+                raise
         except Exception as e:
             logger.error(f"Error loading model: {str(e)}")
             raise
@@ -71,7 +112,6 @@ class ADHDAssistantQueries:
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
             inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True)
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -180,6 +220,12 @@ class ADHDAssistantQueries:
         task_queries: TaskQueries,
         calendar_queries: CalendarQueries
     ) -> AssistantResponse:
+        if not self._is_initialized:
+            await self.initialize()
+    
+        if not self._model or not self._tokenizer:
+            raise RuntimeError("Model not properly initialized")
+
         print(f"=== Processing message in ADHDAssistantQueries ===")
         print(f"User ID: {user_id}")
         print(f"Content: {content}")
@@ -244,97 +290,97 @@ class ADHDAssistantQueries:
         current_section = None
         task_breakdown_data = {}
         
-        # for line in sections:
-        #     line = line.strip()
-        #     if not line:
-        #         continue
+        for line in sections:
+            line = line.strip()
+            if not line:
+                continue
                 
-        #     # Check for section markers
-        #     if line.startswith('BREAKDOWN:'):
-        #         current_section = 'breakdown'
-        #         task_breakdown_data = {
-        #             'main_task': line.replace('BREAKDOWN:', '').strip(),
-        #             'subtasks': [],
-        #             'estimated_time': 30,  # Default
-        #             'difficulty_level': 2,  # Default
-        #             'energy_level_needed': 2,  # Default
-        #             'context_switches': 1,  # Default
-        #             'initiation_tips': [],
-        #             'dopamine_hooks': [],
-        #             'break_points': []
-        #         }
-        #     elif line.startswith('QUICK_WIN:'):
-        #         current_section = 'quick_win'
-        #         suggestions['dopamine_boosters'].append(line.replace('QUICK_WIN:', '').strip())
-        #     elif line.startswith('TIME_TIP:'):
-        #         current_section = 'time'
-        #         suggestions['calendar_events'].append({
-        #             'tip': line.replace('TIME_TIP:', '').strip(),
-        #             'type': 'time_management'
-        #         })
-        #     elif line.startswith('FOCUS:'):
-        #         current_section = 'focus'
-        #         suggestions['focus_tips'].append(line.replace('FOCUS:', '').strip())
-        #     elif line.startswith('EF_SUPPORT:'):
-        #         current_section = 'ef_support'
-        #         ef_tip = line.replace('EF_SUPPORT:', '').strip()
-        #         suggestions['ef_supports'].append({
-        #             'strategy': ef_tip,
-        #             'category': self._categorize_ef_support(ef_tip)
-        #         })
-        #     elif line.startswith('ENVIRONMENT:'):
-        #         current_section = 'environment'
-        #         suggestions['environment_tips'].append(line.replace('ENVIRONMENT:', '').strip())
-        #     elif line.startswith('START_NOW:'):
-        #         current_section = 'tasks'
-        #         suggestions['tasks'].append(line.replace('START_NOW:', '').strip())
-        #     else:
-        #         # Process content based on current section
-        #         if current_section == 'breakdown':
-        #             if line.startswith('- Time:'):
-        #                 try:
-        #                     task_breakdown_data['estimated_time'] = int(
-        #                         line.replace('- Time:', '').strip().split()[0]
-        #                     )
-        #                 except ValueError:
-        #                     pass
-        #             elif line.startswith('- Difficulty:'):
-        #                 try:
-        #                     task_breakdown_data['difficulty_level'] = int(
-        #                         line.replace('- Difficulty:', '').strip().split('/')[0]
-        #                     )
-        #                 except ValueError:
-        #                     pass
-        #             elif line.startswith('- Energy:'):
-        #                 try:
-        #                     task_breakdown_data['energy_level_needed'] = int(
-        #                         line.replace('- Energy:', '').strip().split('/')[0]
-        #                     )
-        #                 except ValueError:
-        #                     pass
-        #             elif line.startswith('- Steps:') or line.startswith('- Subtasks:'):
-        #                 current_section = 'breakdown_steps'
-        #             elif line.startswith('- Break at:'):
-        #                 try:
-        #                     break_points = line.replace('- Break at:', '').strip()
-        #                     task_breakdown_data['break_points'] = [
-        #                         int(x.strip()) for x in break_points.split(',')
-        #                     ]
-        #                 except ValueError:
-        #                     pass
-        #             elif line.startswith('- Tips:'):
-        #                 current_section = 'breakdown_tips'
-        #             elif line.startswith('- Dopamine hooks:'):
-        #                 current_section = 'breakdown_hooks'
-        #         elif current_section == 'breakdown_steps':
-        #             if line.startswith('-'):
-        #                 task_breakdown_data['subtasks'].append(line.replace('-', '').strip())
-        #         elif current_section == 'breakdown_tips':
-        #             if line.startswith('-'):
-        #                 task_breakdown_data['initiation_tips'].append(line.replace('-', '').strip())
-        #         elif current_section == 'breakdown_hooks':
-        #             if line.startswith('-'):
-        #                 task_breakdown_data['dopamine_hooks'].append(line.replace('-', '').strip())
+            # Check for section markers
+            if line.startswith('BREAKDOWN:'):
+                current_section = 'breakdown'
+                task_breakdown_data = {
+                    'main_task': line.replace('BREAKDOWN:', '').strip(),
+                    'subtasks': [],
+                    'estimated_time': 30,  # Default
+                    'difficulty_level': 2,  # Default
+                    'energy_level_needed': 2,  # Default
+                    'context_switches': 1,  # Default
+                    'initiation_tips': [],
+                    'dopamine_hooks': [],
+                    'break_points': []
+                }
+            elif line.startswith('QUICK_WIN:'):
+                current_section = 'quick_win'
+                suggestions['dopamine_boosters'].append(line.replace('QUICK_WIN:', '').strip())
+            elif line.startswith('TIME_TIP:'):
+                current_section = 'time'
+                suggestions['calendar_events'].append({
+                    'tip': line.replace('TIME_TIP:', '').strip(),
+                    'type': 'time_management'
+                })
+            elif line.startswith('FOCUS:'):
+                current_section = 'focus'
+                suggestions['focus_tips'].append(line.replace('FOCUS:', '').strip())
+            elif line.startswith('EF_SUPPORT:'):
+                current_section = 'ef_support'
+                ef_tip = line.replace('EF_SUPPORT:', '').strip()
+                suggestions['ef_supports'].append({
+                    'strategy': ef_tip,
+                    'category': self._categorize_ef_support(ef_tip)
+                })
+            elif line.startswith('ENVIRONMENT:'):
+                current_section = 'environment'
+                suggestions['environment_tips'].append(line.replace('ENVIRONMENT:', '').strip())
+            elif line.startswith('START_NOW:'):
+                current_section = 'tasks'
+                suggestions['tasks'].append(line.replace('START_NOW:', '').strip())
+            else:
+                # Process content based on current section
+                if current_section == 'breakdown':
+                    if line.startswith('- Time:'):
+                        try:
+                            task_breakdown_data['estimated_time'] = int(
+                                line.replace('- Time:', '').strip().split()[0]
+                            )
+                        except ValueError:
+                            pass
+                    elif line.startswith('- Difficulty:'):
+                        try:
+                            task_breakdown_data['difficulty_level'] = int(
+                                line.replace('- Difficulty:', '').strip().split('/')[0]
+                            )
+                        except ValueError:
+                            pass
+                    elif line.startswith('- Energy:'):
+                        try:
+                            task_breakdown_data['energy_level_needed'] = int(
+                                line.replace('- Energy:', '').strip().split('/')[0]
+                            )
+                        except ValueError:
+                            pass
+                    elif line.startswith('- Steps:') or line.startswith('- Subtasks:'):
+                        current_section = 'breakdown_steps'
+                    elif line.startswith('- Break at:'):
+                        try:
+                            break_points = line.replace('- Break at:', '').strip()
+                            task_breakdown_data['break_points'] = [
+                                int(x.strip()) for x in break_points.split(',')
+                            ]
+                        except ValueError:
+                            pass
+                    elif line.startswith('- Tips:'):
+                        current_section = 'breakdown_tips'
+                    elif line.startswith('- Dopamine hooks:'):
+                        current_section = 'breakdown_hooks'
+                elif current_section == 'breakdown_steps':
+                    if line.startswith('-'):
+                        task_breakdown_data['subtasks'].append(line.replace('-', '').strip())
+                elif current_section == 'breakdown_tips':
+                    if line.startswith('-'):
+                        task_breakdown_data['initiation_tips'].append(line.replace('-', '').strip())
+                elif current_section == 'breakdown_hooks':
+                    if line.startswith('-'):
+                        task_breakdown_data['dopamine_hooks'].append(line.replace('-', '').strip())
 
         # Only add task breakdown if we have subtasks
         if task_breakdown_data.get('subtasks'):

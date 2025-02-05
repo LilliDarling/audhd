@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import logging
+import torch
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -22,11 +23,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def get_assistant_queries():
+    assistant = ADHDAssistantQueries()
+    await assistant.initialize()
+    return assistant
+
 @router.post("/message", response_model=AssistantResponse)
 async def send_message(
     message_data: MessageRequest,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
-    assistant_queries: ADHDAssistantQueries = Depends(),
+    assistant_queries: ADHDAssistantQueries = Depends(get_assistant_queries),
     task_queries: TaskQueries = Depends(),
     calendar_queries: CalendarQueries = Depends()
 ) -> JSONResponse:
@@ -105,24 +111,35 @@ async def get_message_history(
 
 @router.get("/health")
 async def check_health(
-    assistant_queries: ADHDAssistantQueries = Depends()
+    assistant_queries: ADHDAssistantQueries = Depends(get_assistant_queries)
 ):
     try:
-        initialized = assistant_queries._is_initialized
-        device = assistant_queries.device if initialized else None
-        model_name = assistant_queries.model_name if initialized else None
+        # Test if model is actually responsive
+        test_input = "Hello"
+        inputs = assistant_queries._tokenizer(test_input, return_tensors="pt", padding=True)
+        inputs = {k: v.to(assistant_queries.device) for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            outputs = assistant_queries._model.generate(
+                **inputs,
+                max_length=10,
+                num_return_sequences=1,
+            )
+        
+        test_output = assistant_queries._tokenizer.decode(outputs[0], skip_special_tokens=True)
         
         return {
-            "status": "ready" if initialized else "initializing",
-            "initialized": initialized,
-            "device": device,
-            "model": model_name,
+            "status": "healthy",
+            "initialized": assistant_queries._is_initialized,
+            "device": assistant_queries.device,
+            "model": assistant_queries.model_name,
+            "test_output": test_output,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
-            "status": "error",
+            "status": "unhealthy",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
