@@ -1,3 +1,4 @@
+import gc
 import os
 os.environ["HF_HOME"] = "/root/.cache/huggingface/transformers"
 
@@ -57,7 +58,6 @@ class ADHDAssistantQueries:
             del self.model
         if hasattr(self, 'tokenizer'):
             del self.tokenizer
-        import gc
         gc.collect()
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
     
@@ -83,7 +83,7 @@ class ADHDAssistantQueries:
     
     async def _load_model(self):
         try:
-            logger.info(f"Loading model {self.model_name} on {self.device}")
+            print(f"Loading model {self.model_name} on {self.device}")
             cache_dir = "/root/.cache/huggingface/transformers"
             offload_folder = "/tmp/model_offload"
             os.makedirs(offload_folder, exist_ok=True)
@@ -103,16 +103,17 @@ class ADHDAssistantQueries:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
                 
 
-                device_map = {
-                    'model.embed_tokens': 'disk',
-                    'model.norm': 'cpu',
-                    'lm_head': 'cpu'
-                }
+                # device_map = {
+                #     'model.embed_tokens': 'disk',
+                #     'model.norm': 'disk',
+                #     'lm_head': 'disk',
+                #     'model.layers': 'disk'
+                # }
                 
-                # Map all other layers to disk
-                n_layers = 32  # Number of layers in LLaMA 3B
-                for i in range(n_layers):
-                    device_map[f'model.layers.{i}'] = 'disk'
+                # # Map all other layers to disk
+                # n_layers = 32  # Number of layers in LLaMA 3B
+                # for i in range(n_layers):
+                #     device_map[f'model.layers.{i}'] = 'disk'
 
                 self.__class__.model = AutoModelForCausalLM.from_pretrained(
                     self.__class__.model_name,
@@ -120,7 +121,7 @@ class ADHDAssistantQueries:
                     cache_dir=cache_dir,
                     local_files_only=False,
                     torch_dtype=torch.float32,
-                    device_map=device_map,
+                    device_map='auto',
                     max_memory={'cpu': '5GB'},
                     offload_folder=offload_folder,
                     low_cpu_mem_usage=True,
@@ -147,40 +148,45 @@ class ADHDAssistantQueries:
 
     async def _get_model_response(self, prompt: str, history: List[Dict[str, str]] = None) -> Optional[str]:
         print(f"=== Getting Model Response ===")
-        cache_key = f"{prompt}_{json.dumps(history) if history else ''}"
-        if cache_key in self.message_cache:
-            return self.message_cache[cache_key]
-
+        # cache_key = f"{prompt}_{json.dumps(history) if history else ''}"
+        # if cache_key in self.message_cache:
+        #     return self.message_cache[cache_key]
+        
         try:
+            recent_history = history[-2:] if history else []
             formatted_messages = ''.join(
                 f"{msg['role'].title()}: {msg['content']}\n" 
-                for msg in (history or [])
+                for msg in recent_history
             )
             
             print(f"Formatted messages")
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
-            inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True)
-            # inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True, max_length=256)
+            print(f"Tokenized length: {len(inputs['input_ids'][0])}")
 
-            print(f"Received Inputs")
-
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    # max_length=2000,
-                    # num_return_sequences=1,
-                    # temperature=0.7,
-                    # top_p=0.9,
-                    # do_sample=True,
-                    # repetition_penalty=1.2,
-                    pad_token_id=self.tokenizer.pad_token_id
-                )
-            print(f"received outputs")
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+            gc.collect()
+            
+            # with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=100,
+                num_return_sequences=1,
+                temperature=0.7,
+                # top_p=0.9,
+                # do_sample=True,
+                # repetition_penalty=1.2,
+                # pad_token_id=self.tokenizer.pad_token_id,
+                use_cache=True,
+                early_stopping=True,
+            )
+            print(f"Received outputs")
             result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            self.message_cache[cache_key] = result
-            print(f"Cached Result & Returning")
-            return result
+            print(f"Result: {result}")
+            # self.message_cache[cache_key] = result
+            # print(f"Cached Result & Returning")
+            return result.split("Assistant:")[-1].strip()
 
         except Exception as e:
             logger.error(f"Error getting model response: {str(e)}")
@@ -240,8 +246,8 @@ class ADHDAssistantQueries:
             for task in tasks
         )
         
-        if has_calendar:
-            base_prompt += "\nGoogle Calendar is connected for time-blocking and reminders."
+        # if has_calendar:
+        #     base_prompt += "\nGoogle Calendar is connected for time-blocking and reminders."
         
         return base_prompt + task_context
 
