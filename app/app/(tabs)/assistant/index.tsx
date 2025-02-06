@@ -48,7 +48,7 @@ export default function AssistantScreen() {
   const checkHealth = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/assistant/health`, {
-        timeout: 30000,  // Increase to 30 seconds since model loading takes time
+        timeout: 60000,  // Increase to 30 seconds since model loading takes time
         withCredentials: true,
         headers: {
           'Accept': 'application/json'

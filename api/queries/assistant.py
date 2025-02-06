@@ -102,16 +102,17 @@ class ADHDAssistantQueries:
                 if self.tokenizer.pad_token is None:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
                 
-                # device_map = {
-                #     'model.embed_tokens': 'disk',
-                #     'model.norm': 'cpu',
-                #     'lm_head': 'cpu'
-                # }
+
+                device_map = {
+                    'model.embed_tokens': 'disk',
+                    'model.norm': 'cpu',
+                    'lm_head': 'cpu'
+                }
                 
-                # # Map all other layers to disk
-                # n_layers = 32  # Number of layers in LLaMA 3B
-                # for i in range(n_layers):
-                #     device_map[f'model.layers.{i}'] = 'disk'
+                # Map all other layers to disk
+                n_layers = 32  # Number of layers in LLaMA 3B
+                for i in range(n_layers):
+                    device_map[f'model.layers.{i}'] = 'disk'
 
                 self.__class__.model = AutoModelForCausalLM.from_pretrained(
                     self.__class__.model_name,
@@ -119,8 +120,8 @@ class ADHDAssistantQueries:
                     cache_dir=cache_dir,
                     local_files_only=False,
                     torch_dtype=torch.float32,
-                    device_map='cpu',
-                    max_memory={'cpu': '4GB'},
+                    device_map=device_map,
+                    max_memory={'cpu': '5GB'},
                     offload_folder=offload_folder,
                     low_cpu_mem_usage=True,
                 )
@@ -145,6 +146,7 @@ class ADHDAssistantQueries:
             raise
 
     async def _get_model_response(self, prompt: str, history: List[Dict[str, str]] = None) -> Optional[str]:
+        print(f"=== Getting Model Response ===")
         cache_key = f"{prompt}_{json.dumps(history) if history else ''}"
         if cache_key in self.message_cache:
             return self.message_cache[cache_key]
@@ -155,25 +157,29 @@ class ADHDAssistantQueries:
                 for msg in (history or [])
             )
             
+            print(f"Formatted messages")
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
             inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True)
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            # inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+            print(f"Received Inputs")
 
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    max_length=2000,
-                    num_return_sequences=1,
-                    temperature=0.7,
-                    top_p=0.9,
-                    do_sample=True,
-                    repetition_penalty=1.2,
+                    # max_length=2000,
+                    # num_return_sequences=1,
+                    # temperature=0.7,
+                    # top_p=0.9,
+                    # do_sample=True,
+                    # repetition_penalty=1.2,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
-
+            print(f"received outputs")
             result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             self.message_cache[cache_key] = result
+            print(f"Cached Result & Returning")
             return result
 
         except Exception as e:
