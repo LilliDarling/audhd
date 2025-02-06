@@ -1,8 +1,9 @@
-import gc
 import os
 os.environ["HF_HOME"] = "/root/.cache/huggingface/transformers"
 
 import asyncio
+import gc
+import psutil
 import torch
 import json
 import logging
@@ -151,7 +152,8 @@ class ADHDAssistantQueries:
         # cache_key = f"{prompt}_{json.dumps(history) if history else ''}"
         # if cache_key in self.message_cache:
         #     return self.message_cache[cache_key]
-        
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        gc.collect()
         try:
             recent_history = history[-2:] if history else []
             formatted_messages = ''.join(
@@ -164,10 +166,8 @@ class ADHDAssistantQueries:
 
             inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True, max_length=256)
             print(f"Tokenized length: {len(inputs['input_ids'][0])}")
+            print(f"Memory before generate: {psutil.Process().memory_info().rss / 1024 / 1024:.2f} MB")
 
-            torch.cuda.empty_cache() if torch.cuda.is_available() else None
-            gc.collect()
-            
             # with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
