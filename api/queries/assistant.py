@@ -1,4 +1,5 @@
 import os
+import shutil
 os.environ["HF_HOME"] = "/root/.cache/huggingface/transformers"
 
 import asyncio
@@ -7,7 +8,9 @@ import psutil
 import torch
 import json
 import logging
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import bitsandbytes
+from accelerate import Accelerator
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from openai import OpenAI  # Keep for voice transcription
@@ -102,43 +105,45 @@ class ADHDAssistantQueries:
 
                 if self.tokenizer.pad_token is None:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
-                
-
-                # device_map = {
-                #     'model.embed_tokens': 'disk',
-                #     'model.norm': 'disk',
-                #     'lm_head': 'disk',
-                #     'model.layers': 'disk'
-                # }
-                
-                # # Map all other layers to disk
-                # n_layers = 32  # Number of layers in LLaMA 3B
-                # for i in range(n_layers):
-                #     device_map[f'model.layers.{i}'] = 'disk'
 
                 self.__class__.model = AutoModelForCausalLM.from_pretrained(
                     self.__class__.model_name,
                     token=os.getenv('HF_TOKEN'),
                     cache_dir=cache_dir,
-                    local_files_only=False,
                     torch_dtype=torch.float32,
-                    device_map='auto',
-                    max_memory={'cpu': '5GB'},
-                    offload_folder=offload_folder,
-                    low_cpu_mem_usage=True,
+                    low_cpu_mem_usage=True
                 )
+                
+                # Apply dynamic quantization after loading
+                self.__class__.model = torch.quantization.quantize_dynamic(
+                    self.model,
+                    {torch.nn.Linear},  # Quantize linear layers
+                    dtype=torch.qint8
+                )
+
+                # self.__class__.model = AutoModelForCausalLM.from_pretrained(
+                #     self.__class__.model_name,
+                #     token=os.getenv('HF_TOKEN'),
+                #     cache_dir=cache_dir,
+                #     local_files_only=False,
+                #     torch_dtype=torch.float32,
+                #     device_map=device_map,
+                #     max_memory={'cpu': '4GB', 'disk': '20GB'},
+                #     offload_folder=offload_folder,
+                #     low_cpu_mem_usage=True,
+                # )
 
                 logger.info("Model loaded successfully")
 
-                test_input = "Hello"
-                inputs = self.tokenizer(test_input, return_tensors="pt")
-                inputs = {k: v.to(self.device) for k, v in inputs.items()}
+                # test_input = "Hello"
+                # inputs = self.tokenizer(test_input, return_tensors="pt")
+                # inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-                with torch.no_grad():
-                    output = self.model.generate(**inputs, max_length=10)
-                    logger.info(f"Test output: {self.tokenizer.decode(output[0])}")
+                # with torch.no_grad():
+                #     output = self.model.generate(**inputs, max_length=10)
+                #     logger.info(f"Test output: {self.tokenizer.decode(output[0])}")
                 
-                logger.info("Model test successful")
+                # logger.info("Model test successful")
 
             except Exception as e:
                 logger.error(f"Tokenizer/Model loading error: {str(e)}")
@@ -155,7 +160,7 @@ class ADHDAssistantQueries:
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
         gc.collect()
         try:
-            recent_history = history[-2:] if history else []
+            recent_history = history[-1:] if history else []
             formatted_messages = ''.join(
                 f"{msg['role'].title()}: {msg['content']}\n" 
                 for msg in recent_history
@@ -164,26 +169,35 @@ class ADHDAssistantQueries:
             print(f"Formatted messages")
             full_prompt = f"{prompt}\n\n{formatted_messages}Assistant:"
 
-            inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True, max_length=256)
+            inputs = self.tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True, max_length=128)
+
+            print(f"Checking disk usage in offload folder...")
+            print(f"Disk usage: {shutil.disk_usage('/tmp/model_offload')}")
             print(f"Tokenized length: {len(inputs['input_ids'][0])}")
             print(f"Memory before generate: {psutil.Process().memory_info().rss / 1024 / 1024:.2f} MB")
 
-            # with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=100,
-                num_return_sequences=1,
-                temperature=0.7,
-                # top_p=0.9,
-                # do_sample=True,
-                # repetition_penalty=1.2,
-                # pad_token_id=self.tokenizer.pad_token_id,
-                use_cache=True,
-                early_stopping=True,
-            )
+            outputs = []
+        
+            with torch.no_grad():
+                current_output = self.model.generate(
+                    **inputs,
+                    max_new_tokens=30,  # Generate shorter sequences
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    do_sample=False,
+                    early_stopping=True
+                )
+                outputs.extend(current_output)
             print(f"Received outputs")
+
             result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             print(f"Result: {result}")
+
+            del outputs
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+            gc.collect()
+
+            print(f"Cleaned up")
             # self.message_cache[cache_key] = result
             # print(f"Cached Result & Returning")
             return result.split("Assistant:")[-1].strip()
