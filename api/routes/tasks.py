@@ -108,3 +108,23 @@ async def delete_task(
         raise
     except Exception as e:
         raise UserExceptions.database_error("deleting task")
+    
+@router.post("/{task_id}/regenerate-breakdown")
+async def regenerate_task_breakdown(
+    task_id: str,
+    current_user: UserResponse = Depends(try_get_jwt_user_data),
+    queries: TaskQueries = Depends(),
+) -> TaskResponse:
+    """Endpoint to manually regenerate task breakdown"""
+    if not current_user:
+        raise AuthExceptions.unauthorized()
+    
+    try:
+        updated_task = await queries.regenerate_breakdown(task_id, current_user.id)
+        return TaskResponse.from_mongo(updated_task)
+    except ValueError:
+        raise TaskExceptions.not_found()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise UserExceptions.database_error("regenerating task breakdown")
