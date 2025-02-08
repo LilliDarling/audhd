@@ -1,6 +1,8 @@
 import logging
 import os
 from anthropic import Anthropic
+from datetime import datetime, timezone
+from models.usage import UserAPIUsage
 from config.database import engine
 from models.tasks import Task, TaskBreakdown, TaskCache
 from typing import Optional
@@ -14,6 +16,8 @@ class TaskAnalyzer:
         if not os.getenv("ANTHROPIC_API_KEY"):
             raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
         
+        self.daily_limit = 10
+        
         self.system_prompt = """You are an ADHD task assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging. Break down tasks into clear, actionable steps. Focus on:
         1. Task Initiation Support
         2. Simple, concrete starting steps
@@ -23,6 +27,32 @@ class TaskAnalyzer:
         6. Realistic time estimates
         7. When to take breaks"""
 
+    async def check_rate_limit(self, user_id: str) -> bool:
+        """Checks a users usage and sets a limit for task breakdown generations each day"""
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        usage = await engine.find_one(
+            UserAPIUsage, 
+            UserAPIUsage.user_id == user_id,
+            UserAPIUsage.date == today
+        )
+
+        if not usage:
+            usage = UserAPIUsage(
+                user_id=user_id,
+                date=today,
+                generation_count=0
+            )
+            await engine.save(usage)
+
+        if usage.generation_count >= self.daily_limit:
+            return False
+
+        usage.generation_count += 1
+        usage.last_updated = datetime.now(timezone.utc)
+        await engine.save(usage)
+        
+        return True
 
     async def _get_cached_breakdown(self, task_key: str) -> Optional[str]:
         """Get breakdown from MongoDB cache"""
@@ -50,6 +80,9 @@ class TaskAnalyzer:
 
     async def get_task_breakdown(self, task: Task) -> Optional[TaskBreakdown]:
         """Get task breakdown from cache or generate new one"""
+        if not await self.check_rate_limit(task.user_id):
+            raise ValueError(f"Daily generation limit of {self.daily_limit} reached. Please try again tomorrow.")
+        
         task_key = f"{task.title.lower().strip()}:{task.description.lower().strip()}"
         
         # Try to get from cache

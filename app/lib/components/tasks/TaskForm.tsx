@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, Switch, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Task } from '@/lib/types/tasks';
@@ -26,6 +26,20 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [breakdown, setBreakdown] = useState<any>(null);
+  const [usageInfo, setUsageInfo] = useState<any>(null);
+
+  useEffect(() => {
+    loadUsage();
+  }, []);
+
+  const loadUsage = async () => {
+    try {
+        const usage = await tasksApi.getGenerationUsage();
+        setUsageInfo(usage);
+    } catch (err) {
+        console.error('Failed to load usage info:', err);
+    }
+  };
 
   const validateForm = () => {
     if (formData.title.length < 5 || formData.title.length > 30) {
@@ -197,6 +211,12 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
               }
             />
           </View>
+
+          {usageInfo && (
+            <Text style={{ color: '#6b7280', fontSize: 12 }}>
+              {usageInfo.generations_remaining} generations remaining today
+            </Text>
+          )}
 
           <Pressable
             onPress={handleGenerate}

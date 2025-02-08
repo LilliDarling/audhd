@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+import os
+from api.models.usage import UserAPIUsage
 from fastapi import Depends, HTTPException, APIRouter
 from bson import ObjectId
 from models.tasks import Task, TaskRequest, TaskResponse
@@ -6,6 +9,7 @@ from queries.tasks import TaskQueries
 from queries.analyzer import TaskAnalyzer
 from utils.authentication import try_get_jwt_user_data
 from utils.exceptions import AuthExceptions, UserExceptions, TaskExceptions
+from config.database import engine
 
 
 router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
@@ -160,3 +164,25 @@ async def regenerate_task_breakdown(
         raise
     except Exception as e:
         raise UserExceptions.database_error("regenerating task breakdown")
+
+@router.get("/usage")
+async def get_task_generation_usage(
+    current_user: UserResponse = Depends(try_get_jwt_user_data),
+) -> dict:
+    if not current_user:
+        raise AuthExceptions.unauthorized()
+    
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    usage = await engine.find_one(
+        UserAPIUsage, 
+        UserAPIUsage.user_id == current_user.id,
+        UserAPIUsage.date == today
+    )
+    
+    daily_limit = int(os.getenv("DAILY_GENERATION_LIMIT", "10"))
+    
+    return {
+        "daily_limit": daily_limit,
+        "generations_used": usage.generation_count if usage else 0,
+        "generations_remaining": daily_limit - (usage.generation_count if usage else 0)
+    }
