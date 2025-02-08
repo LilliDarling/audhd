@@ -13,7 +13,6 @@ router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
 @router.post("/create")
 async def create_task(
     task: TaskRequest,
-    preview: bool = False,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     queries: TaskQueries = Depends(),
 ) -> TaskResponse:
@@ -21,26 +20,43 @@ async def create_task(
         raise AuthExceptions.unauthorized()
     
     try:
-        temp_task = Task(
-            title=task.title,
-            description=task.description,
-            priority=task.priority,
-            status=task.status,
-            user_id=current_user.id,
-            context=task.context
-        )
-        
-        analyzer = TaskAnalyzer()
-        breakdown = await analyzer.get_task_breakdown(temp_task)
-
-        if preview:
-            return {"breakdown": breakdown}
-        
         new_task = await queries.create_task(task, current_user.id)
         return TaskResponse.from_mongo(new_task)
     
     except Exception as e:
         raise UserExceptions.database_error("creating task")
+
+
+@router.post("/generate")
+async def generate_task_breakdown(
+    task_request: TaskRequest,
+    current_user: UserResponse = Depends(try_get_jwt_user_data),
+    queries: TaskQueries = Depends(),
+) -> dict:
+    if not current_user:
+        raise AuthExceptions.unauthorized()
+    
+    try:
+        temp_task = Task(
+            title=task_request.title,
+            description=task_request.description,
+            priority=task_request.priority,
+            status=task_request.status,
+            user_id=current_user.id,
+            context=task_request.context
+        )
+        
+        analyzer = TaskAnalyzer()
+        breakdown = await analyzer.get_task_breakdown(temp_task)
+        
+        if not breakdown:
+            raise HTTPException(status_code=500, detail="Failed to generate task breakdown")
+            
+        return {"breakdown": breakdown.dict()}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/all")
 async def get_tasks(

@@ -27,5 +27,10 @@ export const tasksApi = {
 
   deleteTask: async (id: string): Promise<void> => {
     await api.delete(`/api/tasks/${id}`);
+  },
+
+  generateBreakdown: async (data: CreateTaskData) => {
+    const response = await api.post('/api/tasks/generate', data);
+    return response.data;
   }
 };

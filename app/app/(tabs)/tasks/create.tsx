@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import TaskForm from '@/lib/components/tasks/TaskForm';
 import { useTasks } from '@/lib/hooks/useTasks';
@@ -30,8 +30,10 @@ export default function CreateTaskScreen() {
   };
 
   return (
-    <View>
-      <TaskForm onSubmit={handleCreate} />
-    </View>
+    <ScrollView>
+      <View>
+        <TaskForm onSubmit={handleCreate} />
+      </View>
+    </ScrollView>
   );
 }
