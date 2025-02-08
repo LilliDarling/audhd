@@ -7,7 +7,6 @@ from odmantic import AIOEngine
 from models.users import User
 from models.tasks import Task
 from models.calendar import GoogleCredentials
-from models.assistant import AssistantMessage
 
 
 env_path = Path('.') / '.env' / 'api.env'
@@ -18,4 +17,4 @@ engine = AIOEngine(client=client, database="audhd")
 
 
 async def initialize_database():
-    await engine.configure_database([User, Task, GoogleCredentials, AssistantMessage])
+    await engine.configure_database([User, Task, GoogleCredentials])

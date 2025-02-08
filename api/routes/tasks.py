@@ -1,8 +1,9 @@
 from fastapi import Depends, HTTPException, APIRouter
 from bson import ObjectId
-from models.tasks import TaskRequest, TaskResponse
+from models.tasks import Task, TaskRequest, TaskResponse
 from models.users import UserResponse
 from queries.tasks import TaskQueries
+from queries.analyzer import TaskAnalyzer
 from utils.authentication import try_get_jwt_user_data
 from utils.exceptions import AuthExceptions, UserExceptions, TaskExceptions
 
@@ -12,6 +13,7 @@ router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
 @router.post("/create")
 async def create_task(
     task: TaskRequest,
+    preview: bool = False,
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     queries: TaskQueries = Depends(),
 ) -> TaskResponse:
@@ -19,10 +21,24 @@ async def create_task(
         raise AuthExceptions.unauthorized()
     
     try:
+        temp_task = Task(
+            title=task.title,
+            description=task.description,
+            priority=task.priority,
+            status=task.status,
+            user_id=current_user.id,
+            context=task.context
+        )
+        
+        analyzer = TaskAnalyzer()
+        breakdown = await analyzer.get_task_breakdown(temp_task)
+
+        if preview:
+            return {"breakdown": breakdown}
+        
         new_task = await queries.create_task(task, current_user.id)
         return TaskResponse.from_mongo(new_task)
-    except HTTPException:
-        raise
+    
     except Exception as e:
         raise UserExceptions.database_error("creating task")
 

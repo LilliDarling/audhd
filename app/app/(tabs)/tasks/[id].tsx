@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,46 +89,67 @@ export default function TaskDetailScreen() {
           ),
         }}
       />
-      
-      <View>
-        <Text>{task.title}</Text>
-        <Text>{task.description}</Text>
-        <Text>Priority: {task.priority}</Text>
-        <Text>Status: {task.status}</Text>
-
+      <ScrollView>
         <View>
-          <Text>Update Status:</Text>
-          {['pending', 'in_progress', 'completed'].map((status) => (
-            <Pressable
-              key={status}
-              onPress={() => handleUpdateStatus(status)}
-            >
-              <Text>{status}</Text>
-            </Pressable>
-          ))}
-        </View>
+          <Text>{task.title}</Text>
+          <Text>{task.description}</Text>
+          <Text>Priority: {task.priority}</Text>
+          <Text>Status: {task.status}</Text>
 
-        {task.breakdown && (
           <View>
-            <Text>AI-Generated Breakdown:</Text>
-            {task.breakdown.steps.map((step, index) => (
-              <View key={index}>
-                <Text>{step.description}</Text>
-                <Text>Time Estimate: {step.time_estimate} minutes</Text>
-                <Text>Initiation Tip: {step.initiation_tip}</Text>
-                <Text>Completion Signal: {step.completion_signal}</Text>
-                <Text>Focus Strategy: {step.focus_strategy}</Text>
-                <Text>Dopamine Hook: {step.dopamine_hook}</Text>
-              </View>
+            <Text>Update Status:</Text>
+            {['pending', 'in_progress', 'completed'].map((status) => (
+              <Pressable
+                key={status}
+                onPress={() => handleUpdateStatus(status)}
+              >
+                <Text>{status}</Text>
+              </Pressable>
             ))}
-            <Text>Suggested Breaks: {task.breakdown.suggested_breaks.join(', ')}</Text>
-            <Text>Initiation Strategy: {task.breakdown.initiation_strategy}</Text>
-            <Text>Energy Level Needed: {task.breakdown.energy_level_needed}</Text>
-            <Text>Materials Needed: {task.breakdown.materials_needed.join(', ')}</Text>
-            <Text>Environment Setup: {task.breakdown.environment_setup}</Text>
           </View>
-        )}
-      </View>
+
+          {task.breakdown && (
+            <View style={{ gap: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold' }}>AI-Generated Breakdown</Text>
+              
+              <View style={{ gap: 12 }}>
+                {task.breakdown.steps.map((step, index) => (
+                  <View key={index} style={{ 
+                    padding: 12,
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 8,
+                    gap: 4
+                  }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                      Step {index + 1}: {step.description}
+                    </Text>
+                    <Text>⏱️ Time Estimate: {step.time_estimate} minutes</Text>
+                    <Text>🚀 Get Started: {step.initiation_tip}</Text>
+                    <Text>✅ Complete When: {step.completion_signal}</Text>
+                    <Text>🎯 Focus Strategy: {step.focus_strategy}</Text>
+                    <Text>🎉 Reward: {step.dopamine_hook}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Task Strategy</Text>
+                <Text>⏸️ Take Breaks After Steps: {task.breakdown.suggested_breaks.join(', ')}</Text>
+                <Text>🎬 Getting Started: {task.breakdown.initiation_strategy}</Text>
+                <Text>⚡ Energy Level Required: {task.breakdown.energy_level_needed}/3</Text>
+                
+                <Text style={{ fontWeight: 'bold' }}>🛠️ Materials Needed:</Text>
+                {task.breakdown.materials_needed.map((item, index) => (
+                  <Text key={index}>• {item}</Text>
+                ))}
+                
+                <Text style={{ fontWeight: 'bold' }}>🏡 Environment Setup:</Text>
+                <Text>{task.breakdown.environment_setup}</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </>
   );
 }

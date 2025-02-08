@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from odmantic import Model
+from odmantic import Model, Field as ODMField
 from pydantic import BaseModel, field_validator, Field
 from typing import List, Optional
 
@@ -9,7 +9,6 @@ class TaskStep(BaseModel):
     time_estimate: int
     initiation_tip: str
     completion_signal: str
-    focus_strategy: str
     dopamine_hook: str
 
 
@@ -21,7 +20,7 @@ class TaskBreakdown(BaseModel):
     energy_level_needed: int = Field(ge=1, le=3)  # energy requirement rating
     # context_switches: int  # number of changes in environment/tools needed # Optimizing for Haiku
     materials_needed: List[str]  # tools, resources, or materials required
-    environment_setup: List[str]  # environmental modifications needed
+    environment_setup: str  # environmental modifications needed
 
 
 class TaskContext(BaseModel):
@@ -71,7 +70,7 @@ class Task(Model):
     user_id: str
     context: Optional[TaskContext] = None
     breakdown: Optional[TaskBreakdown] = None
-    last_analyzed: Optional[bool] = Field(default=False)
+    last_analyzed: Optional[bool] = ODMField(default=False)
 
     model_config = {
         "collection": "tasks"

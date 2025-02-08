@@ -53,7 +53,7 @@ class TaskAnalyzer:
         task_key = f"{task.title.lower().strip()}:{task.description.lower().strip()}"
         
         # Try to get from cache
-        cached_data = self._get_cached_breakdown(task_key)
+        cached_data = await self._get_cached_breakdown(task_key)
         if cached_data:
             try:
                 return TaskBreakdown(**json.loads(cached_data))
@@ -114,7 +114,7 @@ class TaskAnalyzer:
                 }}"""
             }
 
-            response = await self.client.messages.create(
+            response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=2000,
                 temperature=0.3,
