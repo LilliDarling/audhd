@@ -16,10 +16,10 @@ class TaskStep(BaseModel):
 class TaskBreakdown(BaseModel):
     steps: List[TaskStep]
     suggested_breaks: List[int]  # step indices where breaks are recommended
-    adhd_supports: List[str]  # specific ADHD-friendly strategies for this task
+    # adhd_supports: List[str]  # specific ADHD-friendly strategies for this task # Optimizing for Haiku
     initiation_strategy: str  # specific strategy to help start the task
     energy_level_needed: int = Field(ge=1, le=3)  # energy requirement rating
-    context_switches: int  # number of changes in environment/tools needed
+    # context_switches: int  # number of changes in environment/tools needed # Optimizing for Haiku
     materials_needed: List[str]  # tools, resources, or materials required
     environment_setup: List[str]  # environmental modifications needed
 

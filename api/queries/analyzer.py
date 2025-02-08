@@ -14,31 +14,14 @@ class TaskAnalyzer:
         if not os.getenv("ANTHROPIC_API_KEY"):
             raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
         
-        self.system_prompt = """You are a supportive ADHD-focused productivity assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging.
-
-        Key ADHD Support Principles:
-        1. Task Initiation Support:
-        - Provide specific "getting started" micro-steps
-        - Suggest body-doubling or accountability partners
-        - Identify potential obstacles and solutions
-
-        2. Time Management:
-        - Account for time blindness in estimates
-        - Include transition time between tasks
-        - Suggest breaks based on energy levels
-        - Use time-blocking with buffer zones
-
-        3. Focus and Attention:
-        - Minimize context switching
-        - Identify optimal focus times
-        - Suggest environmental modifications
-        - Include dopamine-friendly reward systems
-
-        4. Executive Function Support:
-        - Break tasks into very small, concrete steps
-        - Provide external structure and scaffolding
-        - Include clear start/stop signals
-        - Minimize decision fatigue"""
+        self.system_prompt = """You are an ADHD task assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging. Break down tasks into clear, actionable steps. Focus on:
+        1. Task Initiation Support
+        2. Simple, concrete starting steps
+        3. Executive function support
+        4. Clear completion signals
+        5. Built-in rewards
+        6. Realistic time estimates
+        7. When to take breaks"""
 
 
     async def _get_cached_breakdown(self, task_key: str) -> Optional[str]:
@@ -96,105 +79,45 @@ class TaskAnalyzer:
         try:
             context_info = ""
             if task.context:
-                context_info = f"""
-                Context Information:
-                - Time of Day: {task.context.time_of_day}
-                - Energy Level: {task.context.energy_level}/3
-                - Environment: {task.context.environment}
-                - Medications: {"Yes" if task.context.current_medications else "No"}
+                context_info = f"""Energy Level: {task.context.energy_level}/3
+                Time: {task.context.time_of_day}
+                Location: {task.context.environment}
+                Medicated: {"Yes" if task.context.current_medications else "No"}
                 """
 
             prompt = {
                 "role": "user",
-                "content": f"""Analyze this task and provide a structured ADHD-friendly breakdown.
+                "content": f"""Break down this task for someone with ADHD:
                 Task: {task.title}
                 Description: {task.description}
                 Priority: {task.priority}
                 {context_info}
 
-                Consider the context when providing suggestions. Adjust time estimates and strategies based on energy levels and environment.
+                Consider context when suggesting steps, breaks, and setup.
 
-                Provide a JSON response with the following structure:
+                Provide a JSON response with:
                 {{
                     "steps": [
                         {{
-                            "description": "Gather all required materials and set up workspace",
-                            "time_estimate": 5,
-                            "initiation_tip": "Start by clearing your desk completely",
-                            "completion_signal": "All materials are within arm's reach, workspace is clear",
-                            "focus_strategy": "Remove any visible distractions from workspace",
-                            "dopamine_hook": "Satisfaction of having an organized space"
-                        }},
-                        {{
-                            "description": "Break down the main task into smaller components",
-                            "time_estimate": 10,
-                            "initiation_tip": "Write each component on a separate sticky note",
-                            "completion_signal": "All parts of the task are written down",
-                            "focus_strategy": "Use colorful sticky notes to make it visually engaging",
-                            "dopamine_hook": "Feeling of progress as you create each note"
-                        }},
-                        {{
-                            "description": "Prioritize and order the components",
-                            "time_estimate": 8,
-                            "initiation_tip": "Start by finding the most crucial component",
-                            "completion_signal": "Sticky notes are arranged in order",
-                            "focus_strategy": "Make it physical - move the notes around",
-                            "dopamine_hook": "Creating visual order from chaos"
-                        }},
-                        {{
-                            "description": "Set timers for each component",
-                            "time_estimate": 5,
-                            "initiation_tip": "Start with the first component",
-                            "completion_signal": "Each component has a time estimate",
-                            "focus_strategy": "Use a visual timer app",
-                            "dopamine_hook": "Satisfaction of having a clear timeline"
-                        }},
-                        {{
-                            "description": "Execute first component of task",
-                            "time_estimate": 15,
-                            "initiation_tip": "Remove all sticky notes except the current one",
-                            "completion_signal": "First component deliverable is complete",
-                            "focus_strategy": "Use the Pomodoro technique",
-                            "dopamine_hook": "Check off the first sticky note"
-                        }},
-                        {{
-                            "description": "Review and adjust timeline if needed",
-                            "time_estimate": 5,
-                            "initiation_tip": "Look at completed vs remaining components",
-                            "completion_signal": "Timeline is updated",
-                            "focus_strategy": "Focus only on time, not on task content",
-                            "dopamine_hook": "Feeling of control over the schedule"
+                            "description": "Clear, specific action",
+                            "time_estimate": minutes,
+                            "initiation_tip": "How to start this step",
+                            "completion_signal": "How to know it's done",
+                            "dopamine_hook": "Built-in reward"
                         }}
                     ],
-                    "suggested_breaks": [2, 4],
-                    "adhd_supports": [
-                        "Use body doubling for focus",
-                        "Set up external accountability",
-                        "Use visual timer",
-                        "Create physical checkpoints"
-                    ],
-                    "initiation_strategy": "Start with the physical act of clearing workspace and gathering materials",
-                    "energy_level_needed": 2,
-                    "context_switches": 3,
-                    "materials_needed": [
-                        "Sticky notes",
-                        "Timer",
-                        "Clear workspace",
-                        "Task-specific materials"
-                    ],
-                    "environment_setup": [
-                        "Clear desk of unrelated items",
-                        "Set up visual timer in view",
-                        "Have water nearby",
-                        "Ensure good lighting"
-                    ]
+                    "suggested_breaks": [step numbers for breaks],
+                    "initiation_strategy": "How to start overall task",
+                    "energy_level_needed": 1-3,
+                    "materials_needed": ["item1", "item2"],
+                    "environment_setup": "One clear setup instruction"
                 }}"""
             }
 
             response = await self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=500,
-                temperature=0.5,
+                max_tokens=300,
+                temperature=0.3,
                 system=self.system_prompt,
                 messages=[prompt]
             )
