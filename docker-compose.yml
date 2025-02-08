@@ -24,29 +24,8 @@ services:
       - mongodb
     volumes:
       - ./api:/api
-      - model_cache:/root/.cache/huggingface/transformers
-      - model_offload:/tmp/model_offload
     networks:
       - app-network
-    dns:
-      - 8.8.8.8
-    deploy:
-      resources:
-        limits:
-          memory: 7G
-          cpus: '4'
-        reservations:
-          memory: 4G
-          cpus: '2'
-    environment:
-      - OMP_NUM_THREADS=4
-      - TOKENIZERS_PARALLELISM=true
-      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-    ulimits:
-      memlock: -1
-      stack: 67108864
-    tmpfs:
-      - /tmp:size=2G
 
   mongodb:
     image: mongo
@@ -89,8 +68,6 @@ services:
 
 volumes:
   audhd:
-  model_cache:
-  model_offload:
 
 networks:
   app-network:
