@@ -7,10 +7,6 @@ RUN apt-get update \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN echo "deb http://deb.debian.org/debian testing main" >> /etc/apt/sources.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends libstdc++6 \
-    && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
@@ -22,7 +18,6 @@ WORKDIR /api
 COPY pyproject.toml poetry.lock* ./
 
 RUN poetry install --no-interaction --no-root
-RUN pip install safetensors bitsandbytes
 
 COPY . .
 

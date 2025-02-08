@@ -12,7 +12,6 @@ interface TaskCardProps {
   };
 }
 
-
 export default function TaskCard({ task }: TaskCardProps) {
   const router = useRouter();
   

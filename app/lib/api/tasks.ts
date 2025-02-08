@@ -1,12 +1,5 @@
+import { Task } from '../types/tasks';
 import { api } from './client';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: number;
-  status: string;
-}
 
 type CreateTaskData = Omit<Task, 'id'>;
 type UpdateTaskData = Partial<CreateTaskData>;

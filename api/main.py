@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import logging
-from routes import auth, tasks, calendar, assistant
+from routes import auth, tasks, calendar
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.getLogger("pymongo.topology").setLevel(logging.WARNING)
@@ -27,4 +27,3 @@ api.add_middleware(
 api.include_router(tasks.router, tags=["Tasks"])
 api.include_router(auth.router, tags=["Authentication"])
 api.include_router(calendar.router, tags=["Calendar"])
-api.include_router(assistant.router, tags=["ADHDAssistant"])

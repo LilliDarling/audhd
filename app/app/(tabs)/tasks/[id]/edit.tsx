@@ -3,14 +3,8 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import TaskForm from '@/lib/components/tasks/TaskForm';
 import { tasksApi } from '@/lib/api/tasks';
+import { Task } from '@/lib/types/tasks';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: number;
-  status: string;
-}
 
 export default function EditTaskScreen() {
   const { id } = useLocalSearchParams();
