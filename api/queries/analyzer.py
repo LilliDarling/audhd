@@ -116,7 +116,7 @@ class TaskAnalyzer:
 
             response = await self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=300,
+                max_tokens=2000,
                 temperature=0.3,
                 system=self.system_prompt,
                 messages=[prompt]
