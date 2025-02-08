@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await authApi.signUp(userData);
       dispatch({ type: 'SET_USER', payload: user });
     } catch (error: any) {
+      console.log({error})
       dispatch({ 
         type: 'SET_ERROR', 
         payload: error.response?.data?.detail || 'Registration failed' 

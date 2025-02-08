@@ -48,7 +48,7 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
   };
 
   return (
-    <View>
+    <View className="flex h-full w-full items-center justify-center">
       {error && (
         <View>
           <Text>{error}</Text>
@@ -56,8 +56,9 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
       )}
 
       <View>
-        <Text>Title</Text>
+        <Text className="mt-6 font-bold">Title</Text>
         <TextInput
+          className="px-6 py-2 border rounded"
           value={formData.title}
           onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
           placeholder="Task title"
@@ -68,8 +69,9 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
       </View>
 
       <View>
-        <Text>Description</Text>
+        <Text className="mt-6 font-bold">Description</Text>
         <TextInput
+          className="px-6 py-2 border rounded"
           value={formData.description}
           onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
           placeholder="Task description"
@@ -82,9 +84,10 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
       </View>
 
       <View>
-        <Text>Priority</Text>
-        <View>
+        <Text className="mt-6 font-bold">Priority</Text>
+        <View className='w-full'>
           <Picker
+            className="px-6 py-2 border rounded"
             selectedValue={formData.priority}
             onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
           >
@@ -99,8 +102,8 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
         onPress={handleSubmit}
         disabled={loading}
       >
-        <Text>
-        {loading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Task' : 'Create Task')}
+        <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+          {loading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Task' : 'Create Task')}
         </Text>
       </Pressable>
     </View>

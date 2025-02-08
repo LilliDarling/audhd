@@ -1,9 +1,10 @@
+import axios from 'axios';
 import React, { useState, useRef } from 'react';
-import { 
+import {
   View,
-  Text, 
-  TextInput, 
-  Pressable, 
+  Text,
+  TextInput,
+  Pressable,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -12,12 +13,13 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAssistant } from '@/lib/hooks/useAssistant';
+
 import MessageBubble from '@/lib/components/assistant/MessageBubble';
 import VoiceRecorder from '@/lib/components/assistant/VoiceRecorder';
+import { useAssistant } from '@/lib/hooks/useAssistant';
 import { AssistantMessage, TaskBreakdown } from '@/lib/api/assistant';
-import axios from 'axios';
 import { useAuth } from '@/lib/context/AuthContext';
+import { BASE_URL } from '@/constants/api';
 
 interface AssistantResponse {
   content: string;
@@ -39,7 +41,7 @@ export default function AssistantScreen() {
 
   if (authLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View className="flex h-full w-full items-center justify-center">
         <Text>Loading...</Text>
       </View>
     );
@@ -47,7 +49,7 @@ export default function AssistantScreen() {
 
   if (!isAuthenticated) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View className="flex h-full w-full items-center justify-center">
         <Text>Please log in to use the assistant</Text>
       </View>
     );
@@ -55,14 +57,14 @@ export default function AssistantScreen() {
 
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
-    
+
     const currentMessage = message;
     setMessage('');
-  
+
     try {
       console.log('Starting message send...');
       const response = await axios.post(
-        'http://localhost:8000/api/assistant/message',  // Use full URL
+        `${BASE_URL}/api/assistant/message`,  // Use full URL
         { message: currentMessage },
         {
           headers: {
@@ -72,14 +74,14 @@ export default function AssistantScreen() {
           withCredentials: true
         }
       );
-      
+
       console.log('Raw response:', response);
       console.log('Response data:', response.data);
-      
+
       if (!response.data || !response.data.content) {
         throw new Error('Invalid response format from server');
       }
-  
+
       setLastResponse(response.data);
       flatListRef.current?.scrollToEnd({ animated: true });
     } catch (error) {
@@ -104,19 +106,19 @@ export default function AssistantScreen() {
   };
 
   const renderMessage = ({ item, index }: { item: AssistantMessage; index: number }) => (
-    <MessageBubble 
-      message={item} 
-      suggestions={item.type === 'assistant' && index === messages.length - 1 ? lastResponse : undefined} 
+    <MessageBubble
+      message={item}
+      suggestions={item.type === 'assistant' && index === messages.length - 1 ? lastResponse : undefined}
     />
   );
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
       <Stack.Screen options={{ title: 'ADHD Assistant' }} />
-      
+
       <View style={{ flex: 1 }}>
         <FlatList
           ref={flatListRef}
@@ -126,8 +128,8 @@ export default function AssistantScreen() {
           contentContainerStyle={{ padding: 10 }}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         />
-        
-        <View style={{ 
+
+        <View style={{
           flexDirection: 'row',
           padding: 10,
           borderTopWidth: 1,
@@ -136,13 +138,13 @@ export default function AssistantScreen() {
           alignItems: 'flex-end'
         }}>
           <VoiceRecorder onRecordingComplete={handleVoiceMessage} />
-          
+
           <TextInput
             value={message}
             onChangeText={setMessage}
             placeholder="Type a message..."
             multiline
-            style={{ 
+            style={{
               flex: 1,
               padding: 10,
               backgroundColor: '#f3f4f6',
@@ -151,15 +153,15 @@ export default function AssistantScreen() {
               maxHeight: 100
             }}
           />
-          
-          <Pressable 
+
+          <Pressable
             onPress={handleSend}
             disabled={isLoading || !message.trim()}
           >
-            <Ionicons 
-              name="send" 
-              size={24} 
-              color={isLoading || !message.trim() ? '#9ca3af' : '#6366f1'} 
+            <Ionicons
+              name="send"
+              size={24}
+              color={isLoading || !message.trim() ? '#9ca3af' : '#6366f1'}
             />
           </Pressable>
         </View>

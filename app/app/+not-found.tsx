@@ -5,10 +5,11 @@ export default function NotFoundScreen() {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 18, marginBottom: 16 }}>Page Not Found</Text>
+    <View className="flex h-full w-full items-center justify-center">
+      <Text className="m-2 text-2xl font-bold">Page Not Found</Text>
       <Pressable onPress={() => router.back()}>
-        <Text style={{ color: '#6366f1' }}>Go Back</Text>
+          <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+          Go Back</Text>
       </Pressable>
     </View>
   );

@@ -11,10 +11,10 @@ export default function LoginScreen() {
       <View className="h-full w-full items-center justify-center">
         <Image
           source={require('@/assets/images/adeptexec-logo/wide.png')}
-          className="w-1/2 h-12 m-2"
+          className="w-1/2 h-20 m-6"
           contentFit="scale-down"
         />
-        <Text className="m-2 text-lg">
+        <Text className="m-4 text-xl">
           Welcome Back! Sign in to continue
         </Text>
 
@@ -22,8 +22,8 @@ export default function LoginScreen() {
         
         <Line />
 
-        <View className="mt-6 items-center">
-          <Text className="mb-6">Don't have an account?</Text>
+        <View className="items-center">
+          <Text className="mb-6 text-lg">Don't have an account?</Text>
           <Link href={{ pathname: './signup' }}>
             <Text className="px-6 py-2 border rounded bg-pop-primary hover:bg-pop-secondary/80">
               Sign Up

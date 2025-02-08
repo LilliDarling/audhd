@@ -1,6 +1,5 @@
+import { BASE_URL } from '@/constants/api';
 import axios from 'axios';
-
-const BASE_URL = 'http://localhost:8000'; // Change once we have the URL
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -10,6 +9,7 @@ export const api = axios.create({
   withCredentials: true
 });
 
+console.log({ BASE_URL })
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');

@@ -16,7 +16,9 @@ from config.database import engine
 from models.users import UserRequest, UserResponse, SignInRequest, PasswordChangeRequest
 from queries.auth import UserQueries
 from utils.exceptions import AuthExceptions, UserExceptions
+import logging
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"], prefix="/api/auth")
 
@@ -27,6 +29,7 @@ async def create_user(
     response: Response,
     queries: UserQueries = Depends(),
 ) -> UserResponse:
+    logger.info(user)
     try:
         hashed_password = hash_password(user.password)
         user_new = await queries.create_user(UserRequest(
@@ -35,7 +38,7 @@ async def create_user(
             email=user.email,
             password=hashed_password
         ))
-
+        logger.info({ user_new })
         token = generate_jwt(user_new)
         secure = False if request.headers.get("origin", "").startswith("http://localhost") else True
         response.set_cookie(
@@ -89,6 +92,7 @@ async def signin(
 async def authenticate(
     user: UserResponse = Depends(try_get_jwt_user_data),
 ) -> UserResponse:
+    logger.info(user)
     if not user:
         raise AuthExceptions.unauthorized()
     return user

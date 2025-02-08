@@ -4,37 +4,16 @@ import { Link } from 'expo-router';
 
 export default function WelcomeScreen() {
   return (
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      backgroundColor: '#fff'
-    }}>
-      <Text style={{
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        color: '#1f2937'
-      }}>
+    <View className="flex h-full w-full items-center justify-center">
+      <Text className="m-2 text-2xl font-bold">
         Welcome to TaskMaster
       </Text>
-      
-      <Text style={{
-        fontSize: 16,
-        color: '#6b7280',
-        textAlign: 'center',
-        marginBottom: 24
-      }}>
+      <Text className="m-2">
         Your personal task management assistant
       </Text>
 
       <Link href="./tasks" asChild>
-        <Text style={{
-          color: '#6366f1',
-          fontSize: 16,
-          fontWeight: '500'
-        }}>
+        <Text className="m-2 text-lg text-pop-secondary">
           View My Tasks →
         </Text>
       </Link>

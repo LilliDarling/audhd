@@ -58,6 +58,7 @@ export const authApi = {
       }
       return response.data;
     } catch (error: any) {
+      console.log({ error })
       const authError: AuthError = error.response?.data || { detail: 'Registration failed' };
       throw new AuthenticationError(
         authError.detail,

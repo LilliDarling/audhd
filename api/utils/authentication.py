@@ -1,5 +1,6 @@
 import os
 import bcrypt
+import logging
 from datetime import UTC, datetime, timedelta
 from fastapi import Cookie
 from jose import JWTError, jwt
@@ -10,6 +11,7 @@ from models.users import User
 from config.calendar_mgr import GoogleService
 from utils.exceptions import AuthExceptions
 
+logger = logging.getLogger(__name__)
 ALGORITHM = ALGORITHMS.HS256
 
 SIGNING_KEY = os.environ.get("SIGNING_KEY")
@@ -29,10 +31,12 @@ async def decode_jwt(token: str) -> Optional[JWTPayload]:
 async def try_get_jwt_user_data(
     fast_api_token: Annotated[str | None, Cookie()] = None,
 ) -> Optional[JWTUserData]:
+    logger.info(fast_api_token)
     if not fast_api_token:
         return
 
     payload = await decode_jwt(fast_api_token)
+    logger.info(payload)
     if not payload:
         return
 

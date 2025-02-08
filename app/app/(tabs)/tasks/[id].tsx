@@ -49,11 +49,11 @@ export default function TaskDetailScreen() {
   const handleUpdateStatus = async (newStatus: string) => {
     if (!task) return;
     try {
-      const updatedTask = await updateTask(task.id, { 
+      const updatedTask = await updateTask(task.id, {
         title: task.title,
         description: task.description,
         priority: task.priority,
-        status: newStatus 
+        status: newStatus
       });
       setTask(updatedTask);
     } catch (error) {
@@ -79,11 +79,11 @@ export default function TaskDetailScreen() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <Pressable 
+              <Pressable
                 onPress={() => router.push(`/tasks/${task.id}/edit`)}
                 style={{ marginRight: 15 }}
               >
@@ -96,7 +96,7 @@ export default function TaskDetailScreen() {
           ),
         }}
       />
-      
+
       <View>
         <Text>{task.title}</Text>
         <Text>{task.description}</Text>
@@ -110,7 +110,8 @@ export default function TaskDetailScreen() {
               key={status}
               onPress={() => handleUpdateStatus(status)}
             >
-              <Text>{status}</Text>
+              <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+                {status}</Text>
             </Pressable>
           ))}
         </View>
