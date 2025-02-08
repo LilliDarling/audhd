@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, Switch } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Task } from '@/lib/types/tasks';
+
 
 interface TaskFormProps {
-  onSubmit: (data: any) => Promise<void>;
-  initialData?: {
-    title: string;
-    description: string;
-    priority: number;
-    status: string;
-  };
+  onSubmit: (data: Omit<Task, 'id'>) => Promise<void>;
+  initialData?: Task;
 }
 
 export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
@@ -17,7 +14,13 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
     title: initialData?.title || '',
     description: initialData?.description || '',
     priority: initialData?.priority || 1,
-    status: initialData?.status || 'pending'
+    status: initialData?.status || 'pending',
+    context: {
+      time_of_day: initialData?.context?.time_of_day || 'any',
+      energy_level: initialData?.context?.energy_level || 2,
+      environment: initialData?.context?.environment || 'any',
+      current_medications: initialData?.context?.current_medications || false,
+    },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -93,6 +96,73 @@ export default function TaskForm({ onSubmit, initialData }: TaskFormProps) {
             <Picker.Item label="High" value={3} />
           </Picker>
         </View>
+      </View>
+
+      <View>
+        <Text>Time of Day</Text>
+        <Picker
+          selectedValue={formData.context.time_of_day}
+          onValueChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              context: { ...prev.context, time_of_day: value },
+            }))
+          }
+        >
+          <Picker.Item label="Any" value="any" />
+          <Picker.Item label="Morning" value="morning" />
+          <Picker.Item label="Afternoon" value="afternoon" />
+          <Picker.Item label="Evening" value="evening" />
+        </Picker>
+      </View>
+
+      <View>
+        <Text>Energy Level</Text>
+        <Picker
+          selectedValue={formData.context.energy_level}
+          onValueChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              context: { ...prev.context, energy_level: value },
+            }))
+          }
+        >
+          <Picker.Item label="Low" value={1} />
+          <Picker.Item label="Medium" value={2} />
+          <Picker.Item label="High" value={3} />
+        </Picker>
+      </View>
+
+      <View>
+        <Text>Environment</Text>
+        <Picker
+          selectedValue={formData.context.environment}
+          onValueChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              context: { ...prev.context, environment: value },
+            }))
+          }
+        >
+          <Picker.Item label="Any" value="any" />
+          <Picker.Item label="Home" value="home" />
+          <Picker.Item label="Work" value="work" />
+          <Picker.Item label="School" value="school" />
+          <Picker.Item label="Outside" value="outside" />
+        </Picker>
+      </View>
+
+      <View>
+        <Text>Current Medications</Text>
+        <Switch
+          value={formData.context.current_medications}
+          onValueChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              context: { ...prev.context, current_medications: value },
+            }))
+          }
+        />
       </View>
 
       <Pressable

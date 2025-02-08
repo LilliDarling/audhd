@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TaskBreakdown as TaskBreakdownType } from '@/types/assistant';
+import { TaskBreakdown as TaskBreakdownType } from '@/lib/types/assistant';
 
 interface TaskBreakdownProps {
   breakdown: TaskBreakdownType;

@@ -4,14 +4,7 @@ import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { Ionicons } from '@expo/vector-icons';
 import { tasksApi } from '@/lib/api/tasks';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: number;
-  status: string;
-}
+import { Task } from '@/lib/types/tasks'
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -114,6 +107,27 @@ export default function TaskDetailScreen() {
             </Pressable>
           ))}
         </View>
+
+        {task.breakdown && (
+          <View>
+            <Text>AI-Generated Breakdown:</Text>
+            {task.breakdown.steps.map((step, index) => (
+              <View key={index}>
+                <Text>{step.description}</Text>
+                <Text>Time Estimate: {step.time_estimate} minutes</Text>
+                <Text>Initiation Tip: {step.initiation_tip}</Text>
+                <Text>Completion Signal: {step.completion_signal}</Text>
+                <Text>Focus Strategy: {step.focus_strategy}</Text>
+                <Text>Dopamine Hook: {step.dopamine_hook}</Text>
+              </View>
+            ))}
+            <Text>Suggested Breaks: {task.breakdown.suggested_breaks.join(', ')}</Text>
+            <Text>Initiation Strategy: {task.breakdown.initiation_strategy}</Text>
+            <Text>Energy Level Needed: {task.breakdown.energy_level_needed}</Text>
+            <Text>Materials Needed: {task.breakdown.materials_needed.join(', ')}</Text>
+            <Text>Environment Setup: {task.breakdown.environment_setup}</Text>
+          </View>
+        )}
       </View>
     </>
   );

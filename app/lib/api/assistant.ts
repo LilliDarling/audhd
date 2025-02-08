@@ -1,4 +1,4 @@
-import { AssistantMessage, AssistantResponse } from '@/types/assistant';
+import { AssistantMessage, AssistantResponse } from '@/lib/types/assistant';
 import { api } from './client';
 
 

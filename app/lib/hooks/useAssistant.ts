@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AssistantMessage, AssistantResponse, PendingRequest } from '@/types/assistant';
+import { AssistantMessage, AssistantResponse, PendingRequest } from '@/lib/types/assistant';
 import axios, { CancelTokenSource } from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { assistantApi } from '../api/assistant';

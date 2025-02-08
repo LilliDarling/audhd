@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AuthState, UserResponse, SignInRequest, SignUpRequest } from '@/types/auth';
+import { AuthState, UserResponse, SignInRequest, SignUpRequest } from '@/lib/types/auth';
 import { authApi } from '@/lib/api/auth';
 
 interface AuthContextType extends AuthState {

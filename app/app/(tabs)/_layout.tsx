@@ -19,15 +19,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="assistant"
-        options={{
-          title: 'Assistant',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
-        }}
-      />
     </Tabs>
   );
 }

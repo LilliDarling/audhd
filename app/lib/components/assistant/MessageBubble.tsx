@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
-import { MessageBubbleProps } from '@/types/assistant';
+import { MessageBubbleProps } from '@/lib/types/assistant';
 import TaskBreakdown from './TaskBreakdown';
 
 const getCategoryIcon = (category: string): string => {

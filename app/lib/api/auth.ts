@@ -1,5 +1,5 @@
 import { api } from './client';
-import { SignInRequest, SignUpRequest, UserResponse, AuthError } from '@/types/auth';
+import { SignInRequest, SignUpRequest, UserResponse, AuthError } from '@/lib/types/auth';
 
 class AuthenticationError extends Error {
   constructor(
