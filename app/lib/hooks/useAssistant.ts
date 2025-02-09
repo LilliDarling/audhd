@@ -1,14 +1,29 @@
-import { useState, useCallback, useEffect } from 'react';
-import { assistantApi, AssistantMessage, AssistantResponse } from '@/lib/api/assistant';
-import axios from 'axios';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AssistantMessage, AssistantResponse, PendingRequest } from '@/lib/types/assistant';
+import axios, { CancelTokenSource } from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { assistantApi } from '../api/assistant';
+
 
 export function useAssistant() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const token = user?.token;
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pendingRequestRef = useRef<PendingRequest | null>(null);
+  const cancelTokenSourceRef = useRef<CancelTokenSource | null>(null);
+
+  const cancelPendingRequest = useCallback(() => {
+    if (pendingRequestRef.current?.abortController) {
+      pendingRequestRef.current.abortController.abort();
+      pendingRequestRef.current = null;
+    }
+    if (cancelTokenSourceRef.current) {
+      cancelTokenSourceRef.current.cancel('Operation cancelled by user');
+      cancelTokenSourceRef.current = null;
+    }
+  }, []);
 
   const loadHistory = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -17,9 +32,9 @@ export function useAssistant() {
       setIsLoading(true);
       const history = await assistantApi.getHistory();
       setMessages(history);
-    } catch (err) {
+    } catch (error) {
       setError('Failed to load message history');
-      console.error(err);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -31,44 +46,31 @@ export function useAssistant() {
     }
 
     setIsLoading(true);
+    setError(null);
+    
     try {
-      console.log("Starting to send message:", content);
       const userMessage: AssistantMessage = {
         user_id: user.id,
-        content: content,
+        content,
         timestamp: new Date().toISOString(),
         type: 'user'
       };
       setMessages(prev => [...prev, userMessage]);
 
-      console.log("Making API request...");
-      const response = await axios.post<AssistantResponse>(
-        '/api/assistant/message', 
-        { message: content },
-        {
-          withCredentials: true
-        }
-      );
-      console.log("Received API response:", response.data);
-
-      if (!response.data || !response.data.content) {
-        throw new Error('Invalid response from assistant');
-      }
-
+      const response = await assistantApi.sendMessage(content);
+      
       const assistantMessage: AssistantMessage = {
         user_id: 'assistant',
-        content: response.data.content,
+        content: response.content,
         timestamp: new Date().toISOString(),
         type: 'assistant'
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      return response.data;
+      return response;
     } catch (error) {
-      console.error('Error in sendMessage:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw new Error('Please log in to use the assistant.');
-      }
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -114,7 +116,10 @@ export function useAssistant() {
     if (isAuthenticated) {
       loadHistory();
     }
-  }, [isAuthenticated, loadHistory]);
+    return () => {
+      cancelPendingRequest();
+    };
+  }, [isAuthenticated, loadHistory, cancelPendingRequest]);
 
   return {
     messages,
@@ -123,6 +128,7 @@ export function useAssistant() {
     sendMessage,
     sendVoiceMessage,
     refreshHistory: loadHistory,
-    isAuthenticated
+    isAuthenticated,
+    cancelPendingRequest
   };
 }

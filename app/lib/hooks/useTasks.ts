@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tasksApi } from '@/lib/api/tasks';
+import { Task } from '@/lib/types/tasks';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: number;
-  status: string;
-}
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);

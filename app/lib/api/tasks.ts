@@ -1,12 +1,5 @@
+import { Task } from '../types/tasks';
 import { api } from './client';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: number;
-  status: string;
-}
 
 type CreateTaskData = Omit<Task, 'id'>;
 type UpdateTaskData = Partial<CreateTaskData>;
@@ -34,5 +27,10 @@ export const tasksApi = {
 
   deleteTask: async (id: string): Promise<void> => {
     await api.delete(`/api/tasks/${id}`);
+  },
+
+  generateBreakdown: async (data: CreateTaskData) => {
+    const response = await api.post('/api/tasks/generate', data);
+    return response.data;
   }
 };

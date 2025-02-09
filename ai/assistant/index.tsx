@@ -17,20 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import MessageBubble from '@/lib/components/assistant/MessageBubble';
 import VoiceRecorder from '@/lib/components/assistant/VoiceRecorder';
 import { useAssistant } from '@/lib/hooks/useAssistant';
-import { AssistantMessage, TaskBreakdown } from '@/lib/api/assistant';
 import { useAuth } from '@/lib/context/AuthContext';
 import { BASE_URL } from '@/constants/api';
+import { AssistantMessage, AssistantResponse, TaskBreakdown } from '@/types/assistant';
 
-interface AssistantResponse {
-  content: string;
-  task_breakdown?: TaskBreakdown;
-  suggested_tasks?: string[];
-  calendar_suggestions?: any[];
-  dopamine_boosters?: string[];
-  focus_tips?: string[];
-  executive_function_supports?: any[];
-  environment_adjustments?: string[];
-}
 
 export default function AssistantScreen() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
@@ -55,6 +45,33 @@ export default function AssistantScreen() {
     );
   }
 
+  const API_URL = 'http://localhost:8000';  // Use localhost since frontend is outside Docker
+
+  const checkHealth = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/assistant/health`, {
+        timeout: 60000,  // Increase to 30 seconds since model loading takes time
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      console.log('Health check response:', response.data);
+      return response.data.status === 'healthy';
+    } catch (error) {
+      console.error('Health check failed:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          console.log('Health check timed out - model might still be loading');
+          // Return true if we know it's just loading
+          return true;
+        }
+        console.error('Response data:', error.response?.data);
+      }
+      return false;
+    }
+  };
+
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
 
@@ -62,16 +79,22 @@ export default function AssistantScreen() {
     setMessage('');
 
     try {
+      const healthCheck = checkHealth();
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 5000));
+      const isHealthy = await Promise.race([healthCheck, timeoutPromise]);
+
       console.log('Starting message send...');
       const response = await axios.post(
         `${BASE_URL}/api/assistant/message`,  // Use full URL
+        `${API_URL}/api/assistant/message`,
         { message: currentMessage },
         {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          withCredentials: true
+          withCredentials: true,
+          timeout: 60000  // 60 second timeout for messages
         }
       );
 

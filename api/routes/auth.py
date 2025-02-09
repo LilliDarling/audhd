@@ -23,12 +23,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Authentication"], prefix="/api/auth")
 
 @router.post("/signup")
+async def something(
+    user: UserRequest,    # this causes unprocessable entity error
+    request: Request,
+    response: Response,
+): 
+    print(f"hello")
+
+# @router.post("/signup")
 async def create_user(
     user: UserRequest,
     request: Request,
     response: Response,
     queries: UserQueries = Depends(),
 ) -> UserResponse:
+    print(f"hello")    
     logger.info(user)
     try:
         hashed_password = hash_password(user.password)

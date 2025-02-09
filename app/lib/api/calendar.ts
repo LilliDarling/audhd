@@ -1,17 +1,6 @@
+import { CalendarEventRequest, CalendarEventResponse } from '../types/calendar';
 import { api } from './client';
 
-interface CalendarEventRequest {
-  task_id: string;
-  start_time: string;
-  end_time: string;
-  notification_minutes?: number;
-}
-
-interface CalendarEventResponse {
-  event_id: string;
-  task_id: string;
-  calendar_link: string;
-}
 
 export const calendarApi = {
   connectGoogle: async (googleToken: { access_token: string; refresh_token: string }) => {

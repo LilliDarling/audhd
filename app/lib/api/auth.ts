@@ -1,5 +1,5 @@
 import { api } from './client';
-import { SignInRequest, SignUpRequest, UserResponse, AuthError } from '@/types/auth';
+import { SignInRequest, SignUpRequest, UserResponse, AuthError, TOKEN_KEY, USER_KEY } from '@/lib/types/auth';
 
 class AuthenticationError extends Error {
   constructor(
@@ -11,9 +11,6 @@ class AuthenticationError extends Error {
     this.name = 'AuthenticationError';
   }
 }
-
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'user_data';
 
 export const authApi = {
   setAuthToken: (token: string) => {
@@ -50,12 +47,14 @@ export const authApi = {
 
   signUp: async (userData: SignUpRequest): Promise<UserResponse> => {
     try {
+      console.log({ userData})
       const response = await api.post<UserResponse>('/api/auth/signup', userData);
+console.log(response)
       const { token, ...user } = response.data;
-      if (token) {
-        authApi.setAuthToken(token);
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-      }
+      // if (token) {
+      //   authApi.setAuthToken(token);
+      //   localStorage.setItem(USER_KEY, JSON.stringify(user));
+      // }
       return response.data;
     } catch (error: any) {
       console.log({ error })

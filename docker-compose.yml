@@ -3,7 +3,7 @@ services:
     build: ./app
     volumes:
       - ./app:/app
-      - expo_nm:/app/node_modules
+      - /app/node_modules
     environment:
       BASE_URL: http://localhost:8082
       WEB_PORT: 8082
@@ -13,41 +13,17 @@ services:
       - "8082:8082"
     depends_on:
       - api
-    networks:
-      - app-network      
-
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ~/.ollama:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0:11434
-    networks:
-      - app-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
   api:
-    build: ./api
     env_file: 
       - ./.env/api.env
-    environment: 
-      - OLLAMA_HOST=http://ollama:11434
+    build: ./api
     ports:
       - "8000:8000"
     depends_on:
       - mongodb
-      # - ollama
     volumes:
       - ./api:/api
-      - api_nm:/api/node_modules
     networks:
       - app-network
 
@@ -61,7 +37,7 @@ services:
     ports:
       - "27017:27017"
     networks:
-      - app-network      
+      - app-network
 
   mongo-express:
     image: mongo-express
@@ -75,28 +51,23 @@ services:
     depends_on:
       - mongodb
     networks:
-      - app-network      
+      - app-network
   
-  test:
-    build: ./api
-    command: poetry run pytest tests/ -v --asyncio-mode=auto --cov=.
-    env_file:
-      - ./.env/api.env
-    depends_on:
-      - mongodb
-    networks:
-      - app-network      
-    volumes:
-      - ./api:/api
-    environment:
-      - MONGODB_URL=mongodb://mongodb:27017
-      - PYTHONPATH=/api
+  # test:
+  #   build: ./api
+  #   env_file:
+  #     - ./.env/api.env
+  #   depends_on:
+  #     - mongodb
+  #   volumes:
+  #     - ./api:/api
+  #   command: poetry run pytest tests/ -v --asyncio-mode=auto --cov=.
+  #   environment:
+  #     - MONGODB_URL=mongodb://mongodb:27017
+  #     - PYTHONPATH=/api
 
 volumes:
   audhd:
-  ollama:
-  api_nm:
-  expo_nm:
 
 networks:
   app-network:
