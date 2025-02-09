@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Text, TextInput, View, Pressable } from "react-native";
 import { router, Link } from "expo-router";
+import { Image } from 'expo-image';
 import { useSession } from "@/lib/context/SessionProvider";
 import { authApi } from "@/lib/api/auth";
 import { SignUpRequest } from "@/lib/types/auth";
@@ -37,9 +38,14 @@ export default function SignUp() {
   };
 
   return (
-    <View className="flex-1 justify-center items-center p-4">
+    <View className="flex-1 justify-center items-center">
       {/* Welcome Section */}
       <View className="items-center mb-8">
+        <Image
+          source={require('@/assets/images/adeptexec-logo/wide.png')}
+          className="w-full h-36 m-6"
+          contentFit="scale-down"
+        />
         <Text className="text-2xl font-bold text-gray-800 mb-2">
           Create Account
         </Text>
@@ -98,8 +104,8 @@ export default function SignUp() {
       <Pressable
         onPress={handleSignUpPress}
         className="w-full max-w-[300px] p-3 border rounded bg-pop-secondary/80 hover:bg-pop-primary/80"
-        >
-          <Text className="text-center font-semibold">Sign Up</Text>
+      >
+        <Text className="text-center font-semibold">Sign Up</Text>
       </Pressable>
 
       {/* Sign In Link */}
