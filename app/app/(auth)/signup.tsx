@@ -13,7 +13,7 @@ export default function SignUp() {
 
   const handleSignUpPress = async () => {
     try {
-      const resp = {displayName: 'Afshan'}; // await signUp(email, password, name);
+      const resp = await signUp(email, password, name);
       // console.log(resp)
       if (resp) {
         const user: SignUpRequest = {
@@ -97,11 +97,9 @@ export default function SignUp() {
       {/* Sign Up Button */}
       <Pressable
         onPress={handleSignUpPress}
-        className="bg-blue-600 w-full max-w-[300px] py-3 rounded-lg active:bg-blue-700"
-      >
-        <Text className="text-white font-semibold text-base text-center">
-          Sign Up
-        </Text>
+        className="w-full max-w-[300px] p-3 border rounded bg-pop-secondary/80 hover:bg-pop-primary/80"
+        >
+          <Text className="text-center font-semibold">Sign Up</Text>
       </Pressable>
 
       {/* Sign In Link */}
