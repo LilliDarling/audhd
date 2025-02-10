@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "921827334967",
+    "project_id": "expo-rn-auth",
+    "storage_bucket": "expo-rn-auth.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921827334967:android:cb38eeb9a50656048f58b2",
+        "android_client_info": {
+          "package_name": "com.adeptexec.audh"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "921827334967-geb9nmnntukc1k1gk88lqajo1g9kanpv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9wIq_DEh-WIRiw_3SQKfvB5beKFRmGxQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "921827334967-geb9nmnntukc1k1gk88lqajo1g9kanpv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "921827334967-c6f3mraemgsq57i7gcr09kerhq67gu15.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.adeptexec.audh"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

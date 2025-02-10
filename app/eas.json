@@ -4,15 +4,49 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "node": "^20.18.2",
+      "pnpm": "10.0.0",
+      "env": {
+        "EXAMPLE_ENV": "example value"
+      },
+      "android": {
+        "image": "default",
+        "env": {
+          "PLATFORM": "android"
+        }
+      },
+      "ios": {
+        "image": "latest",
+        "env": {
+          "PLATFORM": "ios"
+        }
+      }
+    },
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development-simulator",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "distribution": "internal",
+        "withoutCredentials": true
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     }
   },
   "submit": {

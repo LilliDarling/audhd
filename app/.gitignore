@@ -38,3 +38,7 @@ yarn-error.*
 app-example
 package-lock.json
 pnpm-lock.yaml
+
+# firebase auth
+GoogleService-Info.plist
+google-services.json

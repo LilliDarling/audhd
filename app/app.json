@@ -3,6 +3,7 @@
     "name": "app",
     "slug": "app",
     "version": "1.0.0",
+    "owner": "adeptexec",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -17,18 +18,22 @@
       "userInterfaceStyle": "automatic",
       "supportsTablet": true,
       "bundleIdentifier": "user.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "userInterfaceStyle": "automatic",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "user.app",
       "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
@@ -86,8 +91,14 @@
         "origin": false
       },
       "eas": {
-        "projectId": "2bcaec6f-ac0f-4fbd-929d-bcd9850f2584"
+        "projectId": "91814b8f-146a-483a-b013-521c94b0fa12"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/91814b8f-146a-483a-b013-521c94b0fa12"
     }
   }
 }

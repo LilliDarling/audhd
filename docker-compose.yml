@@ -13,6 +13,8 @@ services:
       - "8082:8082"
     depends_on:
       - api
+    networks:
+      - app-network      
 
   api:
     env_file: 
