@@ -5,6 +5,7 @@ import { useTasks } from '@/lib/hooks/useTasks';
 import { Ionicons } from '@expo/vector-icons';
 import { tasksApi } from '@/lib/api/tasks';
 import { Task } from '@/lib/types/tasks'
+import { Picker } from '@react-native-picker/picker';
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -75,10 +76,10 @@ export default function TaskDetailScreen() {
       <Stack.Screen 
         options={{
           headerRight: () => (
-            <View style={{ flexDirection: 'row' }}>
+            <View className="flex-row">
               <Pressable 
                 onPress={() => router.push(`/tasks/${task.id}/edit`)}
-                style={{ marginRight: 15 }}
+                className="mr-4"
               >
                 <Ionicons name="pencil" size={24} color="#6366f1" />
               </Pressable>
@@ -89,62 +90,65 @@ export default function TaskDetailScreen() {
           ),
         }}
       />
-      <ScrollView>
-        <View>
-          <Text>{task.title}</Text>
-          <Text>{task.description}</Text>
-          <Text>Priority: {task.priority}</Text>
-          <Text>Status: {task.status}</Text>
+      <ScrollView className="flex-1 bg-slate-800">
+        <View className="p-4 space-y-6">
+          <View className="space-y-2">
+            <Text className="text-3xl font-bold text-slate-200">{task.title}</Text>
+            <Text className="text-base text-slate-300">{task.description}</Text>
+            <Text className="text-base text-slate-400">Priority: {task.priority}</Text>
+          </View>
 
-          <View>
-            <Text>Update Status:</Text>
-            {['pending', 'in_progress', 'completed'].map((status) => (
-              <Pressable
-                key={status}
-                onPress={() => handleUpdateStatus(status)}
+          <View className="space-y-4">
+            <Text className="text-lg font-semibold text-slate-200">Update Status:</Text>
+            <View className="bg-slate-700 py-1 w-1/3 border-0 rounded-lg overflow-hidden">
+              <Picker
+                selectedValue={task.status}
+                onValueChange={handleUpdateStatus}
+                dropdownIconColor="#9ca3af"
+                className="text-slate-200 bg-slate-700"
               >
-                <Text>{status}</Text>
-              </Pressable>
-            ))}
+                <Picker.Item label="Pending" value="pending" />
+                <Picker.Item label="In Progress" value="in_progress" />
+                <Picker.Item label="Completed" value="completed" />
+              </Picker>
+            </View>
           </View>
 
           {task.breakdown && (
-            <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: 'bold' }}>AI-Generated Breakdown</Text>
+            <View className="space-y-6">
+              <Text className="text-xl font-bold text-slate-200">AI-Generated Breakdown</Text>
               
-              <View style={{ gap: 12 }}>
+              <View className="space-y-4">
                 {task.breakdown.steps.map((step, index) => (
-                  <View key={index} style={{ 
-                    padding: 12,
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: 8,
-                    gap: 4
-                  }}>
-                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                  <View key={index} className="p-4 bg-slate-700 rounded-lg space-y-2">
+                    <Text className="text-lg font-semibold text-slate-200">
                       Step {index + 1}: {step.description}
                     </Text>
-                    <Text>⏱️ Time Estimate: {step.time_estimate} minutes</Text>
-                    <Text>🚀 Get Started: {step.initiation_tip}</Text>
-                    <Text>✅ Complete When: {step.completion_signal}</Text>
-                    <Text>🎯 Focus Strategy: {step.focus_strategy}</Text>
-                    <Text>🎉 Reward: {step.dopamine_hook}</Text>
+                    <Text className="text-slate-300">⏱️ Time Estimate: {step.time_estimate} minutes</Text>
+                    <Text className="text-slate-300">🚀 Get Started: {step.initiation_tip}</Text>
+                    <Text className="text-slate-300">✅ Complete When: {step.completion_signal}</Text>
+                    <Text className="text-slate-300">🎯 Focus Strategy: {step.focus_strategy}</Text>
+                    <Text className="text-slate-300">🎉 Reward: {step.dopamine_hook}</Text>
                   </View>
                 ))}
               </View>
 
-              <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Task Strategy</Text>
-                <Text>⏸️ Take Breaks After Steps: {task.breakdown.suggested_breaks.join(', ')}</Text>
-                <Text>🎬 Getting Started: {task.breakdown.initiation_strategy}</Text>
-                <Text>⚡ Energy Level Required: {task.breakdown.energy_level_needed}/3</Text>
+              <View className="space-y-4">
+                <Text className="text-2xl font-semibold text-slate-200">Task Strategy</Text>
+                <Text className="text-base text-slate-300">⏸️ Take Breaks After Steps: {task.breakdown.suggested_breaks.join(', ')}</Text>
+                <Text className="text-base text-slate-300">🎬 Getting Started: {task.breakdown.initiation_strategy}</Text>
+                <Text className="text-base text-slate-300">⚡ Energy Level Required: {task.breakdown.energy_level_needed}/3</Text>
+                <View className="space-y-2">
+                  <Text className="text-base font-semibold text-slate-200">🛠️ Materials Needed:</Text>
+                  {task.breakdown.materials_needed.map((item, index) => (
+                    <Text key={index} className="text-base text-slate-300">• {item}</Text>
+                  ))}
+                </View>
                 
-                <Text style={{ fontWeight: 'bold' }}>🛠️ Materials Needed:</Text>
-                {task.breakdown.materials_needed.map((item, index) => (
-                  <Text key={index}>• {item}</Text>
-                ))}
-                
-                <Text style={{ fontWeight: 'bold' }}>🏡 Environment Setup:</Text>
-                <Text>{task.breakdown.environment_setup}</Text>
+                <View className="space-y-2">
+                  <Text className="text-base font-semibold text-slate-200">🏡 Environment Setup:</Text>
+                  <Text className="text-base text-slate-300 pb-5">{task.breakdown.environment_setup}</Text>
+                </View>
               </View>
             </View>
           )}
