@@ -1,6 +1,6 @@
 import axios from 'axios';
-
-const BASE_URL = 'http://localhost:8000'; // Change once we have the URL
+import { BASE_URL } from '@/lib/types/api';
+import { TOKEN_KEY, USER_KEY } from '@/lib/types/auth';
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -10,9 +10,10 @@ export const api = axios.create({
   withCredentials: true
 });
 
+console.log({ BASE_URL })
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,8 +28,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
     }
     return Promise.reject(error);
   }

@@ -35,39 +35,39 @@ const socials = [
     icon: "fa-solid fa-globe",
   },
   {
-    name: "GitHub",
-    href: "https://github.com/XXXXXX",
-    icon: "fa-brands fa-github",
-  },
-  {
     name: "LinkedIn",
     href: "https://www.linkedin.com/company/adeptexec/",
     icon: "fa-brands fa-linkedin",
   },
   {
-    name: "X",
-    href: "https://x.com/XXXXX",
-    icon: "fa-brands fa-twitter",
+    name: "Discord",
+    href: "https://discord.gg/M5hPVYYh",
+    icon: "fa-brands fa-discord",
   },
   {
-    name: "Instagram",
-    href: "https://instagram.com/XXXXX",
-    icon: "fa-brands fa-instagram",
+    name: "YouTube",
+    href: "https://www.youtube.com/@adeptexec",
+    icon: "fa-brands fa-youtube",
   },
+  {
+    name: "GitHub",
+    href: "https://github.com/XXXXXX",
+    icon: "fa-brands fa-github",
+  },
+  // {
+  //   name: "Instagram",
+  //   href: "https://instagram.com/XXXXX",
+  //   icon: "fa-brands fa-instagram",
+  // },
+  // {
+  //   name: "X",
+  //   href: "https://x.com/XXXXX",
+  //   icon: "fa-brands fa-twitter",
+  // },
   // {
   //   name: "facebook",
   //   href: "https://discord.gg/XXXXXX",
   //   icon: "fa-brands fa-facebook",
-  // },
-  // {
-  //   name: "Discord",
-  //   href: "https://discord.gg/XXXXXX",
-  //   icon: "fa-brands fa-discord",
-  // },
-  // {
-  //   name: "YouTube",
-  //   href: "https://www.youtube.com/XXXXX",
-  //   icon: "fa-brands fa-youtube",
   // },
 ];
 </script>

@@ -1,6 +1,6 @@
 export interface SignInRequest {
     username: string;
-    password: string;
+    password?: string;
 }
   
 export interface SignUpRequest {
@@ -28,3 +28,6 @@ export type AuthState = {
     isAuthenticated: boolean;
     error: string | null;
 };
+
+export const TOKEN_KEY = 'auth_token';
+export const USER_KEY = 'user_data';

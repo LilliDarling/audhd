@@ -17,7 +17,6 @@ from models.users import UserRequest, UserResponse, SignInRequest, PasswordChang
 from queries.auth import UserQueries
 from utils.exceptions import AuthExceptions, UserExceptions
 
-
 router = APIRouter(tags=["Authentication"], prefix="/api/auth")
 
 @router.post("/signup")
@@ -27,6 +26,7 @@ async def create_user(
     response: Response,
     queries: UserQueries = Depends(),
 ) -> UserResponse:
+    print(f"hello user: {user}")    
     try:
         hashed_password = hash_password(user.password)
         user_new = await queries.create_user(UserRequest(
@@ -35,7 +35,7 @@ async def create_user(
             email=user.email,
             password=hashed_password
         ))
-
+        print(f"user_new {user_new}")   
         token = generate_jwt(user_new)
         secure = False if request.headers.get("origin", "").startswith("http://localhost") else True
         response.set_cookie(
@@ -44,7 +44,7 @@ async def create_user(
             httponly=True,
             samesite="lax",
             secure=secure,
-        )
+        )        
         return UserResponse.from_mongo(user_new)
     except DuplicateKeyError as e:
         error_message = str(e)
@@ -89,6 +89,7 @@ async def signin(
 async def authenticate(
     user: UserResponse = Depends(try_get_jwt_user_data),
 ) -> UserResponse:
+    logger.info(user)
     if not user:
         raise AuthExceptions.unauthorized()
     return user

@@ -11,7 +11,6 @@ from utils.authentication import try_get_jwt_user_data
 from utils.exceptions import AuthExceptions, UserExceptions, TaskExceptions
 from config.database import engine
 
-
 router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
 
 @router.post("/create")

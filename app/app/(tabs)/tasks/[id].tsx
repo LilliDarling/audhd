@@ -42,11 +42,11 @@ export default function TaskDetailScreen() {
   const handleUpdateStatus = async (newStatus: string) => {
     if (!task) return;
     try {
-      const updatedTask = await updateTask(task.id, { 
+      const updatedTask = await updateTask(task.id, {
         title: task.title,
         description: task.description,
         priority: task.priority,
-        status: newStatus 
+        status: newStatus
       });
       setTask(updatedTask);
     } catch (error) {
@@ -72,11 +72,11 @@ export default function TaskDetailScreen() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <Pressable 
+              <Pressable
                 onPress={() => router.push(`/tasks/${task.id}/edit`)}
                 style={{ marginRight: 15 }}
               >
@@ -89,6 +89,28 @@ export default function TaskDetailScreen() {
           ),
         }}
       />
+
+      <View>
+        <Text>{task.title}</Text>
+        <Text>{task.description}</Text>
+        <Text>Priority: {task.priority}</Text>
+        <Text>Status: {task.status}</Text>
+
+        <View>
+          <Text>Update Status:</Text>
+          {['pending', 'in_progress', 'completed'].map((status) => (
+            <Pressable
+              key={status}
+              onPress={() => handleUpdateStatus(status)}
+            >
+              <Text className="border rounded px-6 py-2 mt-6 bg-pop-primary hover:bg-pop-secondary/80">
+                {status}</Text>
+            </Pressable>
+          ))}
+
+        </View>
+      </View>
+
       <ScrollView>
         <View>
           <Text>{task.title}</Text>
@@ -111,10 +133,10 @@ export default function TaskDetailScreen() {
           {task.breakdown && (
             <View style={{ gap: 16 }}>
               <Text style={{ fontSize: 20, fontWeight: 'bold' }}>AI-Generated Breakdown</Text>
-              
+
               <View style={{ gap: 12 }}>
                 {task.breakdown.steps.map((step, index) => (
-                  <View key={index} style={{ 
+                  <View key={index} style={{
                     padding: 12,
                     backgroundColor: '#f3f4f6',
                     borderRadius: 8,
@@ -137,12 +159,12 @@ export default function TaskDetailScreen() {
                 <Text>⏸️ Take Breaks After Steps: {task.breakdown.suggested_breaks.join(', ')}</Text>
                 <Text>🎬 Getting Started: {task.breakdown.initiation_strategy}</Text>
                 <Text>⚡ Energy Level Required: {task.breakdown.energy_level_needed}/3</Text>
-                
+
                 <Text style={{ fontWeight: 'bold' }}>🛠️ Materials Needed:</Text>
                 {task.breakdown.materials_needed.map((item, index) => (
                   <Text key={index}>• {item}</Text>
                 ))}
-                
+
                 <Text style={{ fontWeight: 'bold' }}>🏡 Environment Setup:</Text>
                 <Text>{task.breakdown.environment_setup}</Text>
               </View>
