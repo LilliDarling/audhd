@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import os
-from api.models.usage import UserAPIUsage
+from models.usage import UserAPIUsage
 from fastapi import Depends, HTTPException, APIRouter
 from bson import ObjectId
 from models.tasks import Task, TaskRequest, TaskResponse
