@@ -32,5 +32,14 @@ export const tasksApi = {
   generateBreakdown: async (data: CreateTaskData) => {
     const response = await api.post('/api/tasks/generate', data);
     return response.data;
+  },
+
+  getGenerationUsage: async (): Promise<{
+    daily_limit: number;
+    generations_used: number;
+    generations_remaining: number;
+  }> => {
+    const response = await api.get('/api/tasks/usage');
+    return response.data;
   }
 };
