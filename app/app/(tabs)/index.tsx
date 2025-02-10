@@ -22,22 +22,22 @@ export default function WelcomeScreen() {
   }, []);
 
   return (
-    <View>
-      <View>
-        <Text>Welcome to Effie.</Text>
-        <Text>
+    <View className="flex-1 bg-slate-800 p-6 justify-center space-y-12">
+      <View className="space-y-3 items-center">
+        <Text className="text-3xl font-bold text-slate-200">Welcome to Effie</Text>
+        <Text className="text-lg text-slate-400">
           Your personal task management assistant
         </Text>
       </View>
 
-      <View>
-        <Text>"{quote}"</Text>
-        <Text>— {author}</Text>
+      <View className="bg-gray-200 p-6 rounded-lg space-y-3">
+        <Text className="text-lg italic text-slate-800">"{quote}"</Text>
+        <Text className="text-slate-700">— {author}</Text>
       </View>
 
       <Link href="./tasks" asChild>
-        <Pressable>
-          <Text>
+        <Pressable className="bg-sky-600 py-2 px-2 rounded-lg active:opacity-80">
+          <Text className="text-slate-200 text-center text-lg font-semibold">
             View My Tasks →
           </Text>
         </Pressable>
