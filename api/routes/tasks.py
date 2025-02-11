@@ -20,7 +20,7 @@ router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
 async def get_task_generation_usage(
     current_user: UserResponse = Depends(try_get_jwt_user_data),
     queries: TaskQueries = Depends(),
-) -> UsageResponse:
+) -> dict:
     log = logger.bind(user_id=current_user.id if current_user else None)
     log.info("checking_task_generation_usage")
     
@@ -39,10 +39,18 @@ async def get_task_generation_usage(
         log.info(
             "usage_retrieved",
             generations_used=usage.generation_count if usage else 0,
-            daily_limit=queries.analyzer.daily_limit
+            daily_limit=queries.analyzer.internal_daily_limit
         )
+
+        actual_usage = usage.generation_count if usage else 0
+        displayed_usage = actual_usage // 2
         
-        return UsageResponse.from_usage(usage, queries.analyzer.daily_limit)
+        
+        return {
+                    "daily_limit": queries.analyzer.displayed_daily_limit,
+                    "generations_used": displayed_usage,
+                    "generations_remaining": queries.analyzer.displayed_daily_limit - displayed_usage
+                }
         
     except Exception as e:
         log.error("usage_check_failed", error=str(e))

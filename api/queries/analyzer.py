@@ -19,7 +19,8 @@ class TaskAnalyzer:
             logger.error("missing_api_key", key="ANTHROPIC_API_KEY")
             raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
         
-        self.daily_limit = 20
+        self.internal_daily_limit = 20
+        self.displayed_daily_limit = 10
         
         self.system_prompt = """You are an ADHD task assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging. Break down tasks into clear, actionable steps. Focus on:
         1. Task Initiation Support
@@ -50,7 +51,7 @@ class TaskAnalyzer:
             )
             await engine.save(usage)
 
-        if usage.generation_count >= self.daily_limit:
+        if usage.generation_count >= self.internal_daily_limit:
             logger.warning("rate_limit_exceeded", user_id=user_id, count=usage.generation_count)
             return False
 
