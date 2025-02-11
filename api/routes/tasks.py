@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
-import os
-from models.usage import UserAPIUsage
+from models.usage import UsageResponse, UserAPIUsage
 from fastapi import Depends, HTTPException, APIRouter
 from bson import ObjectId
 from models.tasks import Task, TaskRequest, TaskResponse
@@ -13,6 +12,31 @@ from config.database import engine
 
 
 router = APIRouter(tags=["Tasks"], prefix="/api/tasks")
+
+@router.get("/usage", response_model=UsageResponse)
+async def get_task_generation_usage(
+    current_user: UserResponse = Depends(try_get_jwt_user_data),
+    queries: TaskQueries = Depends(),
+) -> UsageResponse:
+    print("DEBUG: Starting usage endpoint")
+    print("DEBUG: Current user:", current_user)
+    print("DEBUG: Queries:", queries)
+    
+    if not current_user:
+        raise AuthExceptions.unauthorized()
+    
+    try:
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        usage = await engine.find_one(
+            UserAPIUsage, 
+            UserAPIUsage.user_id == current_user.id,
+            UserAPIUsage.date == today
+        )
+        
+        return UsageResponse.from_usage(usage, queries.analyzer.daily_limit)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to get usage information")
 
 @router.post("/create")
 async def create_task(
@@ -164,25 +188,3 @@ async def regenerate_task_breakdown(
         raise
     except Exception as e:
         raise UserExceptions.database_error("regenerating task breakdown")
-
-@router.get("/usage")
-async def get_task_generation_usage(
-    current_user: UserResponse = Depends(try_get_jwt_user_data),
-) -> dict:
-    if not current_user:
-        raise AuthExceptions.unauthorized()
-    
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    usage = await engine.find_one(
-        UserAPIUsage, 
-        UserAPIUsage.user_id == current_user.id,
-        UserAPIUsage.date == today
-    )
-    
-    daily_limit = int(os.getenv("DAILY_GENERATION_LIMIT", "10"))
-    
-    return {
-        "daily_limit": daily_limit,
-        "generations_used": usage.generation_count if usage else 0,
-        "generations_remaining": daily_limit - (usage.generation_count if usage else 0)
-    }

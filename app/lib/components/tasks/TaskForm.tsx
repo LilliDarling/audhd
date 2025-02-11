@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, Switch, ScrollView } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
 import { Task } from '@/lib/types/tasks';
 import { tasksApi } from '@/lib/api/tasks';

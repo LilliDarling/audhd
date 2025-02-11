@@ -39,19 +39,19 @@ services:
     networks:
       - app-network
 
-  mongo-express:
-    image: mongo-express
-    restart: always
-    env_file: 
-      - ./.env/mexpress.env
-    ports:
-      - 8081:8081
-    environment:
-      WAIT_HOSTS: mongodb:27017
-    depends_on:
-      - mongodb
-    networks:
-      - app-network
+  # mongo-express:
+  #   image: mongo-express
+  #   restart: always
+  #   env_file: 
+  #     - ./.env/mexpress.env
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     WAIT_HOSTS: mongodb:27017
+  #   depends_on:
+  #     - mongodb
+  #   networks:
+  #     - app-network
   
   # test:
   #   build: ./api
