@@ -31,5 +31,5 @@ Studies show that Neurodivergent people function better with likeminded individu
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/adeptexec) 
 [![Email](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](info@adeptexec.co) 
 <a href="https://www.adeptexec.com/">
-    <img src="./assets/AdeptExec-02.jpg" width="135" height="auto" alt="Website">
+    <img src="./assets/solid/wide.png" width="135" height="auto" alt="Website">
 </a>
