@@ -2,10 +2,23 @@ import { Stack, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import GoogleAuthButton from '@/lib/components/calendar/GoogleAuthButton';
 
 export default function TasksLayout() {
   const router = useRouter();
+
+  const BackButton = () => (
+    <Pressable
+      onPress={() => router.back()}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.5 : 1,
+        padding: 8,
+      })}
+    >
+      <Ionicons name="chevron-back" size={24} color="#6366f1" />
+    </Pressable>
+  );
+
   return (
     <Stack
       screenOptions={{
@@ -13,27 +26,15 @@ export default function TasksLayout() {
         headerStyle: {
           backgroundColor: '#f8fafc',
         },
-        headerLeft: () => (
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.5 : 1,
-              padding: 8,
-            })}
-          >
-            <Ionicons name="chevron-back" size={24} color="#6366f1" />
-          </Pressable>
-        ),
       }}
     >
       <Stack.Screen 
         name="index" 
         options={{
           title: 'Tasks',
+          headerLeft: () => null,
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <GoogleAuthButton />
               <Link href="/tasks/create" asChild>
                 <Pressable
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -53,13 +54,15 @@ export default function TasksLayout() {
       <Stack.Screen 
         name="create" 
         options={{
-          title: 'Create Task'
+          title: 'Create Task',
+          headerLeft: () => <BackButton />
         }}
       />
       <Stack.Screen 
         name="[id]" 
         options={{
           title: 'Task Details',
+          headerLeft: () => <BackButton />,
           headerBackTitle: 'Tasks'
         }}
       />
@@ -67,6 +70,7 @@ export default function TasksLayout() {
         name="[id]/edit" 
         options={{
           title: 'Edit Task',
+          headerLeft: () => <BackButton />,
           headerBackTitle: 'Details'
         }}
       />

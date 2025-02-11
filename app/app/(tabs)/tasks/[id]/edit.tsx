@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import TaskForm from '@/lib/components/tasks/TaskForm';
 import { tasksApi } from '@/lib/api/tasks';
@@ -43,11 +43,11 @@ export default function EditTaskScreen() {
   }
 
   return (
-    <View>
+    <ScrollView>
       <TaskForm 
         onSubmit={handleSubmit}
         initialData={task}
       />
-    </View>
+    </ScrollView>
   );
 }
