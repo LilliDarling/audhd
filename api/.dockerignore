@@ -22,3 +22,4 @@ coverage.xml
 .hypothesis
 .coverage
 .pytest_cache
+tests

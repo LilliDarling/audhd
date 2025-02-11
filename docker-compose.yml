@@ -2,7 +2,9 @@ services:
   api:
     env_file: 
       - ./.env/api.env
-    build: ./api
+    build: 
+      context: ./api
+      dockerfile: dockerfile.dev
     ports:
       - "8000:8000"
     depends_on:
