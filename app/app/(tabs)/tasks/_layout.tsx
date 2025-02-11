@@ -10,10 +10,7 @@ export default function TasksLayout() {
     <Pressable
       onPress={() => router.back()}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      style={({ pressed }) => ({
-        opacity: pressed ? 0.5 : 1,
-        padding: 8,
-      })}
+      className="p-2 active:opacity-50"
     >
       <Ionicons name="chevron-back" size={24} color="#6366f1" />
     </Pressable>
@@ -24,7 +21,10 @@ export default function TasksLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#f8fafc',
+          backgroundColor: '#475569',
+        },
+        headerTitleStyle: {
+          color: '#e2e8f0',
         },
       }}
     >
@@ -38,13 +38,9 @@ export default function TasksLayout() {
               <Link href="/tasks/create" asChild>
                 <Pressable
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={({ pressed }) => ({
-                    opacity: pressed ? 0.5 : 1,
-                    padding: 8,
-                    marginRight: 8,
-                  })}
+                  className="p-2 mr-2 active:opacity-50"
                 >
-                  <Ionicons name="add" size={28} color="#6366f1" />
+                  <Ionicons name="add" size={28} color="#e2e8f0" />
                 </Pressable>
               </Link>
             </View>
