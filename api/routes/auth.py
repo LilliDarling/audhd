@@ -1,3 +1,4 @@
+import structlog
 from fastapi import (
     Depends,
     Request,
@@ -17,6 +18,7 @@ from models.users import UserRequest, UserResponse, SignInRequest, PasswordChang
 from queries.auth import UserQueries
 from utils.exceptions import AuthExceptions, UserExceptions
 
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["Authentication"], prefix="/api/auth")
 
@@ -27,6 +29,9 @@ async def create_user(
     response: Response,
     queries: UserQueries = Depends(),
 ) -> UserResponse:
+    log = logger.bind(username=user.username)
+    log.info("signup_attempt")
+
     try:
         hashed_password = hash_password(user.password)
         user_new = await queries.create_user(UserRequest(
@@ -45,6 +50,8 @@ async def create_user(
             samesite="lax",
             secure=secure,
         )
+
+        log.info("signup_successful", user_id=str(user_new.id))
         return UserResponse.from_mongo(user_new)
     except DuplicateKeyError as e:
         error_message = str(e)
@@ -53,7 +60,8 @@ async def create_user(
                 raise UserExceptions.duplicate_field(field)
         raise UserExceptions.database_error("creating user")
     except Exception as e:
-        raise UserExceptions.database_error("creating user")
+        log.error("signup_failed", error=str(e))
+        raise
 
 @router.post("/signin")
 async def signin(
@@ -62,10 +70,14 @@ async def signin(
     response: Response,
     queries: UserQueries = Depends(),
 ) -> UserResponse:
+    log = logger.bind(username=user_req.username)
+    log.info("signin_attempt")
+
     try:
         user = await queries.get_by_username(user_req.username)
         
         if not user or not verify_password(user_req.password, user.password):
+            log.warning("invalid_credentials")
             raise AuthExceptions.invalid_credentials()
         
         token = generate_jwt(user)
@@ -78,12 +90,13 @@ async def signin(
             samesite="lax",
             secure=secure,
         )
+
+        log.info("signin_successful", user_id=str(user.id))
         return UserResponse.from_mongo(user)
-        
-    except HTTPException:
-        raise
+
     except Exception as e:
-        raise AuthExceptions.invalid_credentials()
+        log.error("signin_failed", error=str(e))
+        raise
 
 @router.get("/authenticate")
 async def authenticate(

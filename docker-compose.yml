@@ -1,19 +1,4 @@
 services:
-  # expo:
-  #   build: ./app
-  #   volumes:
-  #     - ./app:/app
-  #     - /app/node_modules
-  #   environment:
-  #     BASE_URL: http://localhost:8082
-  #     WEB_PORT: 8082
-  #     NODE_ENV: development
-  #     CHOKIDAR_USEPOLLING: true
-  #   ports:
-  #     - "8082:8082"
-  #   depends_on:
-  #     - api
-
   api:
     env_file: 
       - ./.env/api.env

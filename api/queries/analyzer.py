@@ -1,22 +1,25 @@
-import logging
 import os
+import structlog
+import json
 from anthropic import Anthropic
 from datetime import datetime, timezone
-from models.usage import UserAPIUsage
-from config.database import engine
-from models.tasks import Task, TaskBreakdown, TaskCache
 from typing import Optional
-import json
 
-logger = logging.getLogger(__name__)
+from models.usage import UserAPIUsage
+from models.tasks import Task, TaskBreakdown, TaskCache
+from config.database import engine
+
+
+logger = structlog.get_logger()
 
 class TaskAnalyzer:
     def __init__(self):
         self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         if not os.getenv("ANTHROPIC_API_KEY"):
+            logger.error("missing_api_key", key="ANTHROPIC_API_KEY")
             raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
         
-        self.daily_limit = 10
+        self.daily_limit = 20
         
         self.system_prompt = """You are an ADHD task assistant. Your role is to help users with ADHD manage their tasks, time, and energy levels. Remember that ADHD affects executive function, making task initiation, time management, and maintaining focus challenging. Break down tasks into clear, actionable steps. Focus on:
         1. Task Initiation Support
@@ -29,6 +32,7 @@ class TaskAnalyzer:
 
     async def check_rate_limit(self, user_id: str) -> bool:
         """Checks a users usage and sets a limit for task breakdown generations each day"""
+        logger.info("checking_rate_limit", user_id=user_id)
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
         usage = await engine.find_one(
@@ -38,6 +42,7 @@ class TaskAnalyzer:
         )
 
         if not usage:
+            logger.info("creating_new_usage_record", user_id=user_id)
             usage = UserAPIUsage(
                 user_id=user_id,
                 date=today,
@@ -46,69 +51,91 @@ class TaskAnalyzer:
             await engine.save(usage)
 
         if usage.generation_count >= self.daily_limit:
+            logger.warning("rate_limit_exceeded", user_id=user_id, count=usage.generation_count)
             return False
 
         usage.generation_count += 1
         usage.last_updated = datetime.now(timezone.utc)
         await engine.save(usage)
         
+        logger.info(
+            "rate_limit_check_passed", 
+            user_id=user_id, 
+            count=usage.generation_count
+        )
         return True
 
     async def _get_cached_breakdown(self, task_key: str) -> Optional[str]:
         """Get breakdown from MongoDB cache"""
+        logger.debug("checking_cache", task_key=task_key)
         try:
             cache_entry = await engine.find_one(
                 TaskCache, 
                 TaskCache.task_key == task_key
             )
             if cache_entry:
+                logger.info("cache_hit", task_key=task_key)
                 return cache_entry.breakdown
+            logger.info("cache_miss", task_key=task_key)
         except Exception as e:
-            logger.error(f"Error accessing cache: {e}")
+            logger.error("cache_access_error", error=str(e), task_key=task_key)
         return None
     
     async def _save_to_cache(self, task_key: str, breakdown_str: str) -> None:
         """Save breakdown to MongoDB cache"""
+        logger.debug("saving_to_cache", task_key=task_key)
         try:
             cache_entry = TaskCache(
                 task_key=task_key,
                 breakdown=breakdown_str
             )
             await engine.save(cache_entry)
+            logger.info("saved_to_cache", task_key=task_key)
         except Exception as e:
-            logger.error(f"Error saving to cache: {e}")
+            logger.error("cache_save_error", error=str(e), task_key=task_key)
 
     async def get_task_breakdown(self, task: Task) -> Optional[TaskBreakdown]:
         """Get task breakdown from cache or generate new one"""
+        log = logger.bind(
+            user_id=task.user_id,
+            task_title=task.title
+        )
+        log.info("getting_task_breakdown")
+
         if not await self.check_rate_limit(task.user_id):
+            log.warning("rate_limit_exceeded")
             raise ValueError(f"Daily generation limit of {self.daily_limit} reached. Please try again tomorrow.")
         
         task_key = f"{task.title.lower().strip()}:{task.description.lower().strip()}"
         
-        # Try to get from cache
         cached_data = await self._get_cached_breakdown(task_key)
         if cached_data:
             try:
+                log.info("using_cached_breakdown")
                 return TaskBreakdown(**json.loads(cached_data))
             except json.JSONDecodeError as e:
-                logger.error(f"Error decoding cached breakdown: {str(e)}")
-                # Invalidate bad cache entry
+                log.error("cache_decode_error", error=str(e))
                 return None
 
         try:
-        # Generate new breakdown
             breakdown = await self._generate_breakdown(task)
             if breakdown:
-                    # Update cache
                     cached_str = json.dumps(breakdown.model_dump())
                     await self._save_to_cache(task_key, cached_str)
+                    log.info("generated_new_breakdown")
             return breakdown
         except Exception as e:
-            logger.error(f"Error generating task breakdown: {str(e)}")
+            log.error("breakdown_generation_error", error=str(e))
             return None
 
     async def _generate_breakdown(self, task: Task) -> Optional[TaskBreakdown]:
         """Generate new task breakdown using Claude"""
+        log = logger.bind(
+            user_id=task.user_id,
+            task_title=task.title
+        )
+        log.info("generating_breakdown")
+
         try:
             context_info = ""
             if task.context:
@@ -155,15 +182,15 @@ class TaskAnalyzer:
                 messages=[prompt]
             )
 
-            # Parse JSON response
             content = response.content[0].text
             try:
                 data = json.loads(content)
+                log.info("breakdown_generated_successfully")
                 return TaskBreakdown(**data)
             except json.JSONDecodeError:
-                logger.error("Error parsing JSON response from Claude")
+                log.error("json_parse_error", content=content[:100])
                 return None
 
         except Exception as e:
-            logger.error(f"Error generating task breakdown: {e}")
+            log.error("breakdown_generation_error", error=str(e))
             return None

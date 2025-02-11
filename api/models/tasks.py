@@ -14,19 +14,19 @@ class TaskStep(BaseModel):
 
 class TaskBreakdown(BaseModel):
     steps: List[TaskStep]
-    suggested_breaks: List[int]  # step indices where breaks are recommended
+    suggested_breaks: List[int]
     # adhd_supports: List[str]  # specific ADHD-friendly strategies for this task # Optimizing for Haiku
-    initiation_strategy: str  # specific strategy to help start the task
-    energy_level_needed: int = Field(ge=1, le=3)  # energy requirement rating
+    initiation_strategy: str
+    energy_level_needed: int = Field(ge=1, le=3)
     # context_switches: int  # number of changes in environment/tools needed # Optimizing for Haiku
-    materials_needed: List[str]  # tools, resources, or materials required
-    environment_setup: str  # environmental modifications needed
+    materials_needed: List[str]
+    environment_setup: str
 
 
 class TaskContext(BaseModel):
-    time_of_day: str = Field(default="any")  # morning, afternoon, evening, any
+    time_of_day: str = Field(default="any")
     energy_level: int = Field(default=2, ge=1, le=3)
-    environment: str = Field(default="any")  # home, work, etc.
+    environment: str = Field(default="any")
     current_medications: bool = Field(default=False)
 
     @field_validator('time_of_day')
@@ -51,7 +51,7 @@ class TaskRequest(BaseModel):
     description: str = Field(min_length=5, max_length=100)
     priority: int = Field(ge=1, le=3)
     status: str = Field(default="pending")
-    context: Optional[TaskContext] = None  # Make context optional
+    context: Optional[TaskContext] = None
 
     @field_validator('status')
     @classmethod
