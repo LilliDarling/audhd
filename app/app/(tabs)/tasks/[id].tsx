@@ -81,9 +81,9 @@ export default function TaskDetailScreen() {
                 onPress={() => router.push(`/tasks/${task.id}/edit`)}
                 className="mr-4"
               >
-                <Ionicons name="pencil" size={24} color="#6366f1" />
+                <Ionicons name="pencil" size={24} color="#e2e8f0" />
               </Pressable>
-              <Pressable onPress={handleDelete}>
+              <Pressable onPress={handleDelete} className="mr-4">
                 <Ionicons name="trash-outline" size={24} color="red" />
               </Pressable>
             </View>

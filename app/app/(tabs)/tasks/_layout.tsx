@@ -12,7 +12,7 @@ export default function TasksLayout() {
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       className="p-2 active:opacity-50"
     >
-      <Ionicons name="chevron-back" size={24} color="#6366f1" />
+      <Ionicons name="chevron-back" size={24} color="#e2e8f0" />
     </Pressable>
   );
 
